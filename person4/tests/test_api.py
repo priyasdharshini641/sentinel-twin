@@ -123,3 +123,20 @@ def test_system_reset():
     response = client.post("/api/system/reset")
     assert response.status_code == 200
     assert response.json()["status"] == "SUCCESS"
+
+
+def test_health_check_dynamic_under_attack():
+    """Verify that /health dynamically transitions to COMPROMISED during an attack."""
+    # 1. Check nominal
+    resp_nom = client.get("/health").json()
+    assert resp_nom["status"] == "HEALTHY"
+    assert resp_nom["cyber_physical_health"] == "NOMINAL"
+
+    # 2. Launch attack
+    client.post("/api/attack/launch", json={"attack_type": "coordinated", "intensity": 0.8})
+
+    # 3. Health check should reflect physical compromise
+    resp_attack = client.get("/health").json()
+    assert "COMPROMISED" in resp_attack["status"]
+    assert resp_attack["cyber_physical_health"] == "COMPROMISED"
+    assert resp_attack["active_attack"] is True
