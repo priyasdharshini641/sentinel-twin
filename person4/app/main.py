@@ -53,11 +53,30 @@ async def root():
 
 
 @app.get("/health", tags=["System Health"])
-async def health_check():
-    """Health check endpoint for container orchestrators and monitoring probes."""
+async def health():
+    """
+    Dual-Layer Health Check:
+    1. Software Service Health: Is FastAPI and the background simulation thread running?
+    2. Cyber-Physical Health: Is the physical digital twin secure, or is an attack actively corrupting telemetry?
+    """
+    snapshot = orchestrator.get_current_status()
+    is_attack_active = snapshot.attack_state.get("is_active", False)
+    threat = snapshot.defense_result.threat_level.value
+    trust = snapshot.defense_result.system_trust_score
+
+    if is_attack_active:
+        overall_status = f"COMPROMISED ({snapshot.system_mode.value})"
+    else:
+        overall_status = "HEALTHY"
+
     return {
-        "status": "HEALTHY",
-        "service": "sentinel-twin-backend",
+        "status": overall_status,
+        "service_health": "ONLINE",
+        "cyber_physical_health": "COMPROMISED" if is_attack_active else "NOMINAL",
+        "threat_level": threat,
+        "system_trust_score": trust,
+        "active_attack": is_attack_active,
+        "attack_type": snapshot.attack_state.get("attack_type") if is_attack_active else None,
         "role": "P4 Integration & API Layer",
         "orchestrator_running": orchestrator.is_running,
         "tick_index": orchestrator.tick_index
