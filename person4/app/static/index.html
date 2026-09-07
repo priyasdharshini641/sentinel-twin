@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SENTINEL TWIN — Cyber-Physical Reality Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+    .pulse-danger { animation: pulse-red 1.8s infinite ease-in-out; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+  
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">
+            SENTINEL TWIN
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">Cyber-Physical Reality Engine & Spoofing Detection</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <div id="mode-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center space-x-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="mode-text">SYSTEM NOMINAL</span>
+        </div>
+        <div class="text-xs font-mono text-slate-400 hidden sm:block">
+          Tick: <span id="tick-counter" class="text-cyan-400 font-bold">0</span> | <span id="live-time">--:--:--</span>
+        </div>
+        <a href="/docs" target="_blank" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-md border border-slate-700 transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-code"></i>
+          <span>Swagger API</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    
+    <!-- Top Row: Defense & Attack Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Blue Team Defense Card (P3) -->
+      <div class="glass-card rounded-xl p-5 border-l-4 border-l-cyan-500 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-microchip text-cyan-400"></i>
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Causal Reality Engine (P3)</h2>
+          </div>
+          <span id="threat-badge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-900 text-emerald-300">LOW RISK</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div>
+            <div class="text-3xl font-extrabold font-mono text-cyan-400" id="system-trust">100.0%</div>
+            <div class="text-xs text-slate-400">System Trust Score</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-bold text-slate-200" id="anomaly-badge">NO ANOMALIES</div>
+            <div class="text-xs text-slate-400">Physical Invariants Verified</div>
+          </div>
+        </div>
+
+        <!-- Forensic Explanation -->
+        <div class="bg-slate-900/90 rounded-lg p-3 border border-slate-800 text-xs font-mono">
+          <div class="text-slate-400 font-semibold mb-1 flex items-center space-x-1">
+            <i class="fa-solid fa-magnifying-glass text-cyan-400"></i>
+            <span>Forensic Detective Analysis:</span>
+          </div>
+          <div id="forensic-text" class="text-slate-300 leading-relaxed italic">
+            "All 4 coupled physical invariant equations hold within strict thermal, psychrometric, and hydraulic tolerances."
+          </div>
+        </div>
+      </div>
+
+      <!-- Red Team Attack Console (P2) -->
+      <div class="glass-card rounded-xl p-5 border-l-4 border-l-rose-500 space-y-3 lg:col-span-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-skull-crossbones text-rose-400"></i>
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Red Team Attack Injector (P2)</h2>
+          </div>
+          <span id="attack-status" class="px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-400">STANDBY</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div>
+            <label class="text-xs text-slate-400 font-medium">Attack Vector</label>
+            <select id="attack-type" class="mt-1 w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+              <option value="fdi">False Data Injection (FDI)</option>
+              <option value="drift">Stealth Gradual Drift</option>
+              <option value="coordinated" selected>Coordinated Multi-Sensor</option>
+              <option value="freeze">Sensor Value Freeze</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-400 font-medium">Target Sensor(s)</label>
+            <select id="target-sensor" class="mt-1 w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+              <option value="temperature">Temperature (°C)</option>
+              <option value="water_flow">Water Flow (L/min)</option>
+              <option value="pressure">Pressure (bar)</option>
+              <option value="cooling_load">Cooling Load (kW)</option>
+              <option value="coordinated" selected>Thermal Loop (Multi)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-400 font-medium">Intensity: <span id="intensity-val" class="font-mono text-rose-400">75%</span></label>
+            <input id="intensity-slider" type="range" min="10" max="100" value="75" class="mt-2 w-full accent-rose-500" />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 pt-2">
+          <button id="btn-launch" onclick="launchAttack()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs rounded-lg shadow-lg shadow-rose-900/30 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Inject Attack</span>
+          </button>
+          
+          <button id="btn-stop" onclick="stopAttack()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-hand"></i>
+            <span>Stop Attack</span>
+          </button>
+
+          <button id="btn-reset" onclick="resetSystem()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs rounded-lg border border-slate-800 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>Reset Digital Twin</span>
+          </button>
+          
+          <span id="action-msg" class="text-xs text-slate-400 font-mono ml-auto"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Middle: 4 Physical Invariants Verification Status -->
+    <div class="glass-card rounded-xl p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
+          <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
+          <span>Governing Physical Invariant Contracts</span>
+        </h3>
+        <span class="text-xs text-slate-500 font-mono">Real-time Residual Verification</span>
+      </div>
+
+      <div id="invariants-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Invariant cards injected dynamically -->
+      </div>
+    </div>
+
+    <!-- Bottom: 11-Field Sensor Telemetry Table (P1 Ground Truth vs P2 Reported) -->
+    <div class="glass-card rounded-xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider">Cyber-Physical Telemetry Grid</h2>
+          <p class="text-xs text-slate-400">Ground Truth (P1) vs Reported Telemetry (P2) across all 11 frozen fields</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs">
+          <span class="flex items-center space-x-1 text-cyan-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+            <span>P1 Ground Truth</span>
+          </span>
+          <span class="flex items-center space-x-1 text-rose-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block"></span>
+            <span>P2 Reported</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="border-b border-slate-800 text-slate-400 uppercase">
+            <tr>
+              <th class="py-2.5 px-3">Sensor Parameter</th>
+              <th class="py-2.5 px-3">Unit</th>
+              <th class="py-2.5 px-3 text-cyan-400">P1 Ground Truth</th>
+              <th class="py-2.5 px-3 text-rose-400">P2 Reported Telemetry</th>
+              <th class="py-2.5 px-3">Delta / Residual</th>
+              <th class="py-2.5 px-3">Trust Score</th>
+              <th class="py-2.5 px-3 text-right">Verification Status</th>
+            </tr>
+          </thead>
+          <tbody id="telemetry-body" class="divide-y divide-slate-800/60">
+            <!-- Sensor rows injected dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const slider = document.getElementById('intensity-slider');
+    const intensityVal = document.getElementById('intensity-val');
+    slider.addEventListener('input', (e) => {
+      intensityVal.textContent = e.target.value + '%';
+    });
+
+    const SENSORS_META = [
+      { key: "temperature", label: "Ambient Temperature", unit: "°C", icon: "fa-temperature-half" },
+      { key: "humidity", label: "Relative Humidity", unit: "%", icon: "fa-droplet" },
+      { key: "solar_radiation", label: "Solar Radiation", unit: "W/m²", icon: "fa-sun" },
+      { key: "cooling_load", label: "Cooling Thermal Load", unit: "kW", icon: "fa-snowflake" },
+      { key: "power_consumption", label: "Total Power Draw", unit: "kW", icon: "fa-bolt" },
+      { key: "water_flow", label: "Water Flow Rate", unit: "L/min", icon: "fa-water" },
+      { key: "tank_level", label: "Buffer Tank Level", unit: "%", icon: "fa-database" },
+      { key: "pump_status", label: "Pump Actuator Status", unit: "State", icon: "fa-power-off" },
+      { key: "pump_speed", label: "Pump Motor Speed", unit: "%", icon: "fa-gauge" },
+      { key: "pressure", label: "Hydraulic Pressure", unit: "bar", icon: "fa-tachograph-digital" },
+      { key: "timestamp", label: "Telemetry Timestamp", unit: "ISO", icon: "fa-clock" }
+    ];
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/system/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (err) {
+        console.error("Failed to poll status:", err);
+      }
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('tick-counter').textContent = data.tick_index;
+      document.getElementById('live-time').textContent = new Date(data.timestamp).toLocaleTimeString();
+
+      // Mode Badge
+      const modeBadge = document.getElementById('mode-badge');
+      const modeText = document.getElementById('mode-text');
+      if (data.system_mode === 'NOMINAL') {
+        modeBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center space-x-2";
+        modeText.textContent = "SYSTEM NOMINAL";
+      } else {
+        modeBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-800 flex items-center space-x-2 pulse-danger";
+        modeText.textContent = `ALERT: ${data.system_mode}`;
+      }
+
+      // Defense Result
+      const def = data.defense_result;
+      const trustEl = document.getElementById('system-trust');
+      trustEl.textContent = def.system_trust_score.toFixed(1) + '%';
+      if (def.system_trust_score < 70) {
+        trustEl.className = "text-3xl font-extrabold font-mono text-rose-400";
+      } else if (def.system_trust_score < 90) {
+        trustEl.className = "text-3xl font-extrabold font-mono text-amber-400";
+      } else {
+        trustEl.className = "text-3xl font-extrabold font-mono text-cyan-400";
+      }
+
+      const threatBadge = document.getElementById('threat-badge');
+      threatBadge.textContent = def.threat_level + ' RISK';
+      if (def.threat_level === 'CRITICAL' || def.threat_level === 'ELEVATED') {
+        threatBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-rose-900 text-rose-300";
+      } else {
+        threatBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-900 text-emerald-300";
+      }
+
+      const anomEl = document.getElementById('anomaly-badge');
+      if (def.compromised_sensors && def.compromised_sensors.length > 0) {
+        anomEl.textContent = `COMPROMISED: ${def.compromised_sensors.join(', ')}`;
+        anomEl.className = "text-sm font-bold text-rose-400";
+      } else {
+        anomEl.textContent = "NO ANOMALIES";
+        anomEl.className = "text-sm font-bold text-slate-200";
+      }
+
+      document.getElementById('forensic-text').textContent = `"${def.forensic_deduction}"`;
+
+      // Attack status
+      const atk = data.attack_state;
+      const atkStatus = document.getElementById('attack-status');
+      if (atk && atk.active) {
+        atkStatus.textContent = `ACTIVE: ${atk.type.toUpperCase()}`;
+        atkStatus.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-rose-900 text-rose-300 pulse-danger";
+      } else {
+        atkStatus.textContent = "STANDBY";
+        atkStatus.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-400";
+      }
+
+      // Render Invariants
+      const invGrid = document.getElementById('invariants-grid');
+      invGrid.innerHTML = '';
+      if (def.invariants) {
+        def.invariants.forEach(inv => {
+          const violated = inv.violated;
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-lg border text-xs ${violated ? 'bg-rose-950/40 border-rose-800/80 text-rose-200' : 'bg-slate-900/60 border-slate-800 text-slate-300'}`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold truncate">${inv.name}</span>
+              <span class="${violated ? 'text-rose-400 font-bold' : 'text-emerald-400'}">
+                ${violated ? '<i class="fa-solid fa-triangle-exclamation"></i> FAIL' : '<i class="fa-solid fa-circle-check"></i> PASS'}
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono truncate">${inv.law}</div>
+            <div class="mt-2 text-[10px] flex justify-between font-mono">
+              <span>Residual: <strong class="${violated ? 'text-rose-300' : 'text-slate-300'}">${inv.residual.toFixed(2)}</strong></span>
+              <span class="text-slate-500">Max: ${inv.threshold}</span>
+            </div>
+          `;
+          invGrid.appendChild(card);
+        });
+      }
+
+      // Render Telemetry Table
+      const tbody = document.getElementById('telemetry-body');
+      tbody.innerHTML = '';
+      const gt = data.ground_truth;
+      const rep = data.reported_telemetry;
+      const scores = def.sensor_trust_scores || {};
+
+      SENSORS_META.forEach(meta => {
+        let valGt = gt[meta.key];
+        let valRep = rep[meta.key];
+        let trust = scores[meta.key] !== undefined ? scores[meta.key] : 100.0;
+        let isCompromised = (def.compromised_sensors || []).includes(meta.key);
+
+        let deltaStr = "0.0";
+        if (typeof valGt === 'number' && typeof valRep === 'number') {
+          let diff = valRep - valGt;
+          deltaStr = diff === 0 ? "0.0" : (diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2));
+          valGt = valGt.toFixed(meta.key === 'pressure' ? 2 : 1);
+          valRep = valRep.toFixed(meta.key === 'pressure' ? 2 : 1);
+        } else if (meta.key === 'timestamp') {
+          valGt = new Date(valGt).toLocaleTimeString();
+          valRep = new Date(valRep).toLocaleTimeString();
+          deltaStr = "--";
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = isCompromised ? 'bg-rose-950/30' : 'hover:bg-slate-900/40';
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-medium text-slate-200 flex items-center space-x-2">
+            <i class="fa-solid ${meta.icon} text-slate-400 w-4"></i>
+            <span>${meta.label}</span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-400">${meta.unit}</td>
+          <td class="py-2.5 px-3 text-cyan-400 font-bold">${valGt}</td>
+          <td class="py-2.5 px-3 ${isCompromised ? 'text-rose-400 font-bold underline' : 'text-slate-200'}">${valRep}</td>
+          <td class="py-2.5 px-3 ${deltaStr !== '0.0' && deltaStr !== '--' ? 'text-rose-400 font-bold' : 'text-slate-500'}">${deltaStr}</td>
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${trust < 70 ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-950 text-emerald-400'}">
+              ${trust.toFixed(0)}%
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-right">
+            ${isCompromised ? 
+              '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-900 text-rose-200">SPOOFED</span>' : 
+              '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-emerald-400">VERIFIED</span>'
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function launchAttack() {
+      const type = document.getElementById('attack-type').value;
+      const targetSelect = document.getElementById('target-sensor').value;
+      const intensity = parseFloat(document.getElementById('intensity-slider').value) / 100.0;
+
+      let targets = [];
+      if (targetSelect === 'coordinated') {
+        targets = ["temperature", "solar_radiation", "cooling_load"];
+      } else {
+        targets = [targetSelect];
+      }
+
+      showMsg("Injecting attack...");
+      try {
+        const res = await fetch('/api/attack/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attack_type: type,
+            target_sensors: targets,
+            intensity: intensity,
+            stealth: true
+          })
+        });
+        const json = await res.json();
+        showMsg("Attack active!", "text-rose-400");
+        fetchStatus();
+      } catch (err) {
+        showMsg("Launch failed: " + err, "text-red-500");
+      }
+    }
+
+    async function stopAttack() {
+      showMsg("Stopping attack...");
+      try {
+        await fetch('/api/attack/stop', { method: 'POST' });
+        showMsg("Attack stopped. Restoring nominal physics.", "text-emerald-400");
+        fetchStatus();
+      } catch (err) {
+        showMsg("Stop failed: " + err, "text-red-500");
+      }
+    }
+
+    async function resetSystem() {
+      showMsg("Resetting digital twin...");
+      try {
+        await fetch('/api/system/reset', { method: 'POST' });
+        showMsg("System state reset to nominal zero.", "text-cyan-400");
+        fetchStatus();
+      } catch (err) {
+        showMsg("Reset failed: " + err, "text-red-500");
+      }
+    }
+
+    function showMsg(text, colorClass = "text-slate-400") {
+      const el = document.getElementById('action-msg');
+      el.textContent = text;
+      el.className = `text-xs font-mono ml-auto ${colorClass}`;
+      setTimeout(() => { if (el.textContent === text) el.textContent = ""; }, 4000);
+    }
+
+    // Start 1 Hz Polling
+    fetchStatus();
+    setInterval(fetchStatus, 1000);
+  </script>
+</body>
+</html>
