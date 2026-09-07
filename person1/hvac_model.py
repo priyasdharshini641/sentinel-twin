@@ -4,29 +4,29 @@ import random
 class HVACModel:
     """Models thermal cooling load and electrical power consumption.
     
-    Invariants:
-    - Cooling load increases when ambient temperature rises above setpoint (21°C).
-    - Solar radiation directly contributes to building thermal gain.
-    - HVAC power consumption is bound to cooling load by Chiller COP (Coefficient of Performance).
-    - Total power equals: base_power + hvac_power + pump_power.
+    Strict Invariants (calibrated to team's Cyber-Physical Invariant Contracts):
+    - Invariant 01: Thermodynamic First-Law Balance
+      cooling_load = 2.4 * max(0, temperature - 23.0) + 0.015 * solar_radiation + 1.5 (kW)
+    - Invariant 04: Actuator-Energy Coupling
+      total_power = 0.78 * cooling_load + pump_power + 0.5 (kW)
     """
 
     def __init__(
         self,
-        indoor_setpoint: float = 21.0,       # °C
-        base_building_load: float = 4.0,     # kW internal baseline thermal heat
-        solar_gain_factor: float = 0.015,    # kW per W/m² solar irradiance
-        thermal_transmission: float = 1.2,   # kW per °C temperature delta
-        chiller_cop: float = 3.6,            # Coefficient of Performance
-        facility_base_power: float = 2.5,    # kW baseline electrical draw
+        setpoint_temp: float = 23.0,          # °C indoor target setpoint
+        building_ua: float = 2.4,             # kW/°C thermal conduction
+        solar_absorption: float = 0.015,      # kW per W/m² solar thermal gain
+        base_internal_heat: float = 1.5,      # kW internal baseline thermal heat
+        chiller_work_factor: float = 0.78,    # Electrical kW per thermal kW (1/COP)
+        aux_facility_power: float = 0.5,      # kW auxiliary controls & sensors
         seed: int = 202,
     ):
-        self.indoor_setpoint = indoor_setpoint
-        self.base_building_load = base_building_load
-        self.solar_gain_factor = solar_gain_factor
-        self.thermal_transmission = thermal_transmission
-        self.chiller_cop = chiller_cop
-        self.facility_base_power = facility_base_power
+        self.setpoint_temp = setpoint_temp
+        self.building_ua = building_ua
+        self.solar_absorption = solar_absorption
+        self.base_internal_heat = base_internal_heat
+        self.chiller_work_factor = chiller_work_factor
+        self.aux_facility_power = aux_facility_power
         self.rng = random.Random(seed)
 
     def calculate(
@@ -45,24 +45,19 @@ class HVACModel:
         Returns:
             (cooling_load_kW, total_power_kW)
         """
-        # Thermal load from ambient temperature gradient
-        temp_delta = max(0.0, temperature - self.indoor_setpoint)
-        conductive_load = temp_delta * self.thermal_transmission
+        # 1. Thermal load strictly adheres to First Law of Thermodynamics
+        delta_t = max(0.0, temperature - self.setpoint_temp)
+        conductive_load = self.building_ua * delta_t
+        solar_load = self.solar_absorption * max(0.0, solar_radiation)
 
-        # Thermal load from solar radiation
-        solar_load = max(0.0, solar_radiation * self.solar_gain_factor)
+        cooling_load = conductive_load + solar_load + self.base_internal_heat
+        cooling_load += self.rng.gauss(0, 0.05)
+        cooling_load = max(1.0, round(cooling_load, 2))
 
-        # Total cooling load (kW) required to maintain temperature
-        cooling_load = self.base_building_load + conductive_load + solar_load
-        cooling_load += self.rng.gauss(0, 0.1)
-        cooling_load = max(1.0, round(cooling_load, 1))
-
-        # Electrical power consumed by HVAC chiller compressor
-        hvac_power = cooling_load / self.chiller_cop
-
-        # Total facility electrical power = base facility + HVAC chiller + water pump
-        total_power = self.facility_base_power + hvac_power + pump_power
-        total_power += self.rng.gauss(0, 0.05)
+        # 2. Total electrical power balances chiller work + pump power + aux controls
+        chiller_power = cooling_load * self.chiller_work_factor
+        total_power = chiller_power + pump_power + self.aux_facility_power
+        total_power += self.rng.gauss(0, 0.02)
         total_power = max(1.0, round(total_power, 2))
 
         return cooling_load, total_power

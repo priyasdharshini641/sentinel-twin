@@ -4,27 +4,29 @@ import random
 class HydraulicModel:
     """Models the pump, pipe network, water flow, pressure, and tank level.
     
-    Strict Invariants:
-    - If pump_status == "OFF", water_flow == 0.0 L/min, pump_speed == 0.0%,
-      pressure rests at static baseline (~1.0-1.1 bar), and pump power == 0.0 kW.
-    - If pump_status == "ON", water_flow > 0, pressure rises dynamically with pump head,
-      and pump electrical power follows affinity laws (P ∝ speed³).
-    - Tank level evolves continuously under mass conservation.
+    Strict Invariants (calibrated to team's Cyber-Physical Invariant Contracts):
+    - When pump_status == "OFF":
+      water_flow == 0.0 L/min, pump_speed == 0.0%, pressure == 1.0-1.05 bar (static), pump_power == 0.0 kW.
+    - When pump_status == "ON":
+      water_flow = 2.2 * pump_speed (L/min)
+      pressure = 1.2 + 0.035 * pump_speed (bar)
+      pump_power = 0.4 + 2.8 * (pump_speed / 100)³ (kW)
+    - Tank level evolves continuously under mass conservation (~75%).
     """
 
     def __init__(
         self,
-        max_flow_rate: float = 120.0,       # L/min at 100% speed
-        static_pressure: float = 1.05,       # bar with pump OFF
-        max_dynamic_pressure: float = 3.2,   # additional bar at 100% speed
-        max_pump_power: float = 4.5,         # kW at 100% speed
-        initial_tank_level: float = 75.0,    # %
+        flow_coefficient: float = 2.2,
+        static_pressure_off: float = 1.0,
+        pressure_base_on: float = 1.2,
+        pressure_gain: float = 0.035,
+        initial_tank_level: float = 75.0,
         seed: int = 101,
     ):
-        self.max_flow_rate = max_flow_rate
-        self.static_pressure = static_pressure
-        self.max_dynamic_pressure = max_dynamic_pressure
-        self.max_pump_power = max_pump_power
+        self.flow_coefficient = flow_coefficient
+        self.static_pressure_off = static_pressure_off
+        self.pressure_base_on = pressure_base_on
+        self.pressure_gain = pressure_gain
         self.tank_level = initial_tank_level
         self.rng = random.Random(seed)
 
@@ -46,33 +48,25 @@ class HydraulicModel:
         if status_norm == "OFF":
             effective_speed = 0.0
             water_flow = 0.0
-            # Static head pressure with slight sensor flutter
-            pressure = round(self.static_pressure + self.rng.gauss(0, 0.01), 2)
+            pressure = round(self.static_pressure_off + self.rng.gauss(0, 0.01), 2)
             pump_power = 0.0
         else:
             effective_speed = max(0.0, min(100.0, float(pump_speed_setpoint)))
-            speed_fraction = effective_speed / 100.0
 
-            # Water flow is proportional to pump speed
-            water_flow = self.max_flow_rate * speed_fraction
-            water_flow += self.rng.gauss(0, 0.3)
+            # 1. Flow matches P3 Navier-Stokes invariant (2.2 * speed) with small physical turbulence (+-0.2)
+            water_flow = self.flow_coefficient * effective_speed + self.rng.gauss(0, 0.15)
             water_flow = max(0.0, round(water_flow, 1))
 
-            # Pressure = static pressure + dynamic head proportional to speed²
-            pressure = self.static_pressure + self.max_dynamic_pressure * (speed_fraction ** 2)
-            pressure += self.rng.gauss(0, 0.02)
+            # 2. Pressure matches P3 Bernoulli invariant (1.2 + 0.035 * speed)
+            pressure = self.pressure_base_on + self.pressure_gain * effective_speed + self.rng.gauss(0, 0.01)
             pressure = round(pressure, 2)
 
-            # Pump electrical power follows affinity laws (P ∝ speed³) + electrical motor overhead
-            if speed_fraction > 0.01:
-                pump_power = 0.3 + (self.max_pump_power - 0.3) * (speed_fraction ** 3)
-                pump_power += self.rng.gauss(0, 0.02)
-                pump_power = max(0.0, round(pump_power, 2))
-            else:
-                pump_power = 0.0
+            # 3. Pump Power follows cubic affinity law P = 0.4 + 2.8 * (speed/100)³
+            speed_fraction = effective_speed / 100.0
+            pump_power = 0.4 + 2.8 * (speed_fraction ** 3) + self.rng.gauss(0, 0.01)
+            pump_power = max(0.0, round(pump_power, 2))
 
-        # Tank level evolution (closed-loop buffer with slight nominal makeup float equilibrium)
-        # Smooth oscillation around 75% without discontinuous teleportation
+        # Tank level evolution (closed-loop buffered mass balance)
         target_tank = 75.0
         drift_rate = 0.002 * (target_tank - self.tank_level) * dt_seconds
         noise = self.rng.gauss(0, 0.01)
