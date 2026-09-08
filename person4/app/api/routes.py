@@ -25,6 +25,40 @@ from app.services.orchestrator import orchestrator
 
 router = APIRouter(prefix="/api", tags=["Sentinel Twin System API"])
 
+# -----------------------------------------------------------------------------
+# 0. MULTI-SECTOR ENTERPRISE DOMAIN SWITCHER
+# -----------------------------------------------------------------------------
+from app.services.domains.domain_manager import domain_manager
+
+@router.get(
+    "/domains",
+    summary="List Enterprise Digital Twin Domains",
+    description="Returns metadata for the 4 distinct enterprise sectors: Autonomous Drone GPS Spoofing, Smart Municipal Water, Precision Agriculture, and Hyperscale AI Data Center."
+)
+async def list_domains():
+    return {
+        "active_domain": domain_manager.active_domain_id,
+        "available_domains": domain_manager.list_available_domains()
+    }
+
+
+@router.post(
+    "/domain/switch",
+    summary="Switch Active Enterprise Digital Twin Domain",
+    description="Transitions the digital twin engine to a different enterprise sector (e.g. 'autonomous_drone', 'smart_water', 'precision_agri', 'datacenter_gpu')."
+)
+async def switch_domain(domain_id: str = Query(..., description="Target sector ID")):
+    try:
+        res = domain_manager.set_active_domain(domain_id)
+        # Trigger attack toggle in that domain if requested
+        service = domain_manager.get_domain_service(domain_id)
+        if service:
+            service.reset()
+        return GenericResponse(status="SUCCESS", message=res["message"], data=res)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 
 # -----------------------------------------------------------------------------
 # 1. REST ENDPOINTS

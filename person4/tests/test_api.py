@@ -241,3 +241,28 @@ def test_agriculture_decision_endpoint():
     assert data_attack["action"] == "INTERLOCK_ENGAGED"
 
 
+def test_list_domains():
+    """Verify listing all 4 enterprise domains."""
+    resp = client.get("/api/domains")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "available_domains" in data
+    assert len(data["available_domains"]) == 4
+    domain_ids = [d["domain_id"] for d in data["available_domains"]]
+    assert "autonomous_drone" in domain_ids
+    assert "smart_water" in domain_ids
+    assert "precision_agri" in domain_ids
+    assert "datacenter_gpu" in domain_ids
+
+
+def test_switch_domain_to_drone():
+    """Verify switching to Autonomous Drone & GPS Spoofing domain."""
+    resp = client.post("/api/domain/switch?domain_id=autonomous_drone")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "SUCCESS"
+    assert data["data"]["active_domain"] == "autonomous_drone"
+
+    # Switch back to smart_water
+    resp_back = client.post("/api/domain/switch?domain_id=smart_water")
+    assert resp_back.status_code == 200
