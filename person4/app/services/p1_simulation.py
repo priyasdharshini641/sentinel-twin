@@ -49,19 +49,10 @@ class SimulationService:
         """
         if self.sim:
             p1_tel = self.sim.step(dt_seconds=dt)
-            return Telemetry(
-                temperature=p1_tel.temperature,
-                humidity=p1_tel.humidity,
-                solar_radiation=p1_tel.solar_radiation,
-                cooling_load=p1_tel.cooling_load,
-                power_consumption=p1_tel.power_consumption,
-                water_flow=p1_tel.water_flow,
-                tank_level=p1_tel.tank_level,
-                pump_status=p1_tel.pump_status,
-                pump_speed=p1_tel.pump_speed,
-                pressure=p1_tel.pressure,
-                timestamp=p1_tel.timestamp
-            )
+            if isinstance(p1_tel, Telemetry):
+                return p1_tel
+            return Telemetry.from_dict(p1_tel.to_dict())
+
         else:
             # Fallback nominal
             return Telemetry(

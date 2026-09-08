@@ -3,8 +3,12 @@ SENTINEL TWIN — P4 Backend Verification Suite
 Tests the complete API layer, schema contract, attack triggers, and invariant defense.
 """
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    pytest = None
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app.services.orchestrator import orchestrator
 

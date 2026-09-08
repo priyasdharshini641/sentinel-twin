@@ -1,66 +1,142 @@
 """
-SENTINEL TWIN — P2 Red Team Attack Engine
-Role: P2 Service Interface (Included for complete standalone P4 integration)
-
-Takes ground truth Telemetry and applies cyber-physical spoofing attacks:
-1. False Data Injection (FDI): Step-function abrupt offset.
-2. Gradual Drift: Linear stealth ramp that sneaks under traditional statistical thresholds.
-3. Coordinated Attack: Simultaneously spoofs multiple correlated sensors to look individually plausible.
-4. Freeze Attack: Freezes sensor at stale value despite ongoing physical fluctuations.
+SENTINEL TWIN — P2 Red Team Attack Engine Integration Adapter
+Connects P4 API orchestrator to the official P2 Attack Engine:
+backend.attacks.controller.AttackController
 """
 
-import copy
-import random
-from typing import Dict, Any, List
-from app.models.telemetry import Telemetry, AttackType, AttackLaunchRequest
+from typing import Dict, Any, List, Optional
+from app.models.telemetry import Telemetry, AttackType, AttackLaunchRequest, CustomAttackRequest
+from backend.attacks.controller import AttackController
+from backend.attacks.pump_flow_attack import (
+    SCENARIO_PUMP_OFF_HIGH_FLOW,
+    SCENARIO_PUMP_ON_LOW_ENERGY,
+)
+from backend.attacks.coordinated_attack import (
+    SCENARIO_THERMAL,
+    SCENARIO_PUMP,
+)
 
 
 class AttackEngineService:
-    """
-    Manages active red-team attack state and transforms Ground Truth into Reported Telemetry.
-    """
+    """Adapter wrapping official P2 AttackController for P4 system pipeline."""
 
     def __init__(self):
-        self.is_active: bool = False
-        self.attack_type: AttackType = AttackType.COORDINATED
-        self.target_sensors: List[str] = ["temperature", "solar_radiation", "cooling_load"]
-        self.intensity: float = 0.75
-        self.stealth: bool = True
-        self.elapsed_seconds: float = 0.0
-        self.duration_seconds: float = 0.0
+        self.controller: AttackController = AttackController()
+        self._attack_type_str: str = "coordinated"
+        self._target_sensors: List[str] = ["temperature", "solar_radiation", "cooling_load"]
+        self._intensity: float = 0.75
+        self._stealth: bool = True
+        self._duration_seconds: Optional[int] = None
+        self._elapsed_seconds: float = 0.0
 
-        # Stateful attack accumulators
-        self.drift_offset: float = 0.0
-        self.frozen_values: Dict[str, Any] = {}
-        self.custom_offsets: Dict[str, float] = {}
+    @property
+    def is_active(self) -> bool:
+        return self.controller.active
+
+    @property
+    def active(self) -> bool:
+        return self.controller.active
+
+    @property
+    def attack_type(self) -> AttackType:
+        try:
+            return AttackType(self._attack_type_str)
+        except Exception:
+            return AttackType.COORDINATED
 
     def launch_attack(self, request: AttackLaunchRequest) -> Dict[str, Any]:
-        """Activate an attack scenario with configured parameters."""
-        self.is_active = True
-        self.attack_type = request.attack_type
-        self.target_sensors = request.target_sensors
-        self.intensity = request.intensity
-        self.stealth = request.stealth
-        self.elapsed_seconds = 0.0
-        self.duration_seconds = request.duration_seconds or 0.0
-        self.drift_offset = 0.0
-        self.frozen_values = {}
+        """Activate an attack scenario using the official P2 AttackController."""
+        raw_type = request.attack_type.value if hasattr(request.attack_type, "value") else str(request.attack_type)
+        self._attack_type_str = raw_type
+        self._target_sensors = list(request.target_sensors)
+        self._intensity = request.intensity
+        self._stealth = request.stealth
+        self._duration_seconds = request.duration_seconds
+        self._elapsed_seconds = 0.0
+
+        target = self._target_sensors[0] if self._target_sensors else "temperature"
+
+        config: Dict[str, Any] = {
+            "active": True,
+            "intensity": request.intensity,
+        }
+
+        norm_type = raw_type.lower()
+        if norm_type in ["fdi", "false_injection"]:
+            config["type"] = "FALSE_INJECTION"
+            config["target"] = target
+            config["intensity"] = request.intensity
+        elif norm_type in ["drift", "gradual_drift"]:
+            config["type"] = "GRADUAL_DRIFT"
+            config["target"] = target
+            config["rate"] = 0.5 * max(0.1, request.intensity)
+        elif norm_type in ["coordinated", "coordinated_attack"]:
+            config["type"] = "COORDINATED_ATTACK"
+            has_pump_sensor = any(s in ["pump_status", "pump_speed", "water_flow", "pressure"] for s in self._target_sensors)
+            config["scenario"] = SCENARIO_PUMP if has_pump_sensor else SCENARIO_THERMAL
+            config["direction"] = -1.0
+            config["intensity"] = request.intensity
+        elif norm_type in ["pump", "pump_flow", "pump_flow_attack"]:
+            config["type"] = "PUMP_FLOW_ATTACK"
+            config["scenario"] = SCENARIO_PUMP_OFF_HIGH_FLOW
+            config["intensity"] = request.intensity
+        elif norm_type == "freeze":
+            config["type"] = "FALSE_INJECTION"
+            config["target"] = target
+            config["offset"] = 0.0
+            config["intensity"] = request.intensity
+        else:
+            config["type"] = "FALSE_INJECTION"
+            config["target"] = target
+            config["intensity"] = request.intensity
+
+        self.controller.configure(config)
+        self.controller.start()
 
         return {
             "status": "ATTACK_LAUNCHED",
-            "attack_type": self.attack_type.value,
-            "target_sensors": self.target_sensors,
-            "intensity": self.intensity,
-            "stealth": self.stealth
+            "attack_type": self._attack_type_str,
+            "target_sensors": self._target_sensors,
+            "intensity": self._intensity,
+            "stealth": self._stealth,
         }
+
+    def launch_custom_attack(self, request: CustomAttackRequest) -> Dict[str, Any]:
+        """Custom stage attack with arbitrary sensor offsets."""
+        self._attack_type_str = "coordinated"
+        self._target_sensors = list(request.target_sensors.keys())
+        self._intensity = 1.0
+        self._stealth = getattr(request, "stealth_mode", getattr(request, "stealth", True))
+
+
+        first_target = self._target_sensors[0] if self._target_sensors else "temperature"
+        first_offset = request.target_sensors.get(first_target, -8.0)
+
+        config = {
+            "type": "FALSE_INJECTION",
+            "active": True,
+            "target": first_target,
+            "offset": first_offset,
+            "intensity": 1.0,
+        }
+        self.controller.configure(config)
+        self.controller.start()
+
+        return {
+            "status": "ATTACK_LAUNCHED",
+            "attack_type": "custom",
+            "target_sensors": self._target_sensors,
+            "intensity": 1.0,
+            "stealth": self._stealth,
+            "hacker_alias": getattr(request, "hacker_alias", "Judge Hacker"),
+        }
+
+
 
     def stop_attack(self) -> Dict[str, Any]:
         """Halt any ongoing attack and return system to baseline."""
-        was_active = self.is_active
-        self.is_active = False
-        self.drift_offset = 0.0
-        self.frozen_values.clear()
-
+        was_active = self.controller.active
+        self.controller.stop()
         return {
             "status": "ATTACK_STOPPED",
             "message": "Attack terminated. Telemetry restored to ground truth." if was_active else "No active attack was running."
@@ -68,149 +144,31 @@ class AttackEngineService:
 
     def reset(self):
         """Reset internal attack engine state."""
-        self.stop_attack()
-
-
-    def launch_custom_attack(self, request) -> Dict[str, Any]:
-        """Activate judge-customized sensor injection."""
-        self.is_active = True
-        self.attack_type = AttackType.COORDINATED
-        self.target_sensors = list(request.target_sensors.keys())
-        self.intensity = 0.8
-        self.stealth = request.stealth_mode
-        self.elapsed_seconds = 0.0
-        self.duration_seconds = 0.0
-        self.drift_offset = 0.0
-        self.frozen_values = {}
-        self.custom_offsets = request.target_sensors
-
-        return {
-            "status": "CUSTOM_ATTACK_LAUNCHED",
-            "hacker_alias": request.hacker_alias,
-            "injected_perturbations": request.target_sensors,
-            "stealth": request.stealth_mode
-        }
+        self.controller.reset()
+        self.controller.stop()
+        self._elapsed_seconds = 0.0
 
     def apply(self, truth: Telemetry, dt: float = 1.0) -> Telemetry:
-        """
-        Produce reported telemetry by perturbing ground truth if attack is active.
-        """
-        if not self.is_active:
-            # Clean passthrough
-            return copy.deepcopy(truth)
+        """Apply attack transformation to ground truth using P2 AttackController."""
+        if not self.controller.active:
+            return truth.copy_with()
 
-        self.elapsed_seconds += dt
-
-        # Check auto-expiration if duration was configured
-        if self.duration_seconds > 0 and self.elapsed_seconds >= self.duration_seconds:
+        self._elapsed_seconds += dt
+        if self._duration_seconds and self._elapsed_seconds >= self._duration_seconds:
             self.stop_attack()
-            return copy.deepcopy(truth)
+            return truth.copy_with()
 
-        # Clone ground truth so we never mutate the pristine original
-        rep = copy.deepcopy(truth)
-
-        # ---------------------------------------------------------------------
-        
-        # If custom attack is running with exact sensor offsets:
-        if hasattr(self, "custom_offsets") and self.custom_offsets:
-            for s_name, offset in self.custom_offsets.items():
-                if hasattr(rep, s_name):
-                    val = getattr(rep, s_name)
-                    if isinstance(val, (int, float)):
-                        setattr(rep, s_name, round(val + offset, 2))
-            rep.timestamp = truth.timestamp
-            return rep
-
-        # 1. FALSE DATA INJECTION (FDI): Step-function abrupt bias
-        # ---------------------------------------------------------------------
-        if self.attack_type == AttackType.FDI:
-            offset_mag = 13.5 * self.intensity
-            if "temperature" in self.target_sensors:
-                # Spoof ambient temperature into extreme heatwave (e.g. +13.5°C -> 42°C)
-                rep.temperature = round(truth.temperature + offset_mag, 2)
-            if "humidity" in self.target_sensors:
-                rep.humidity = round(min(98.0, truth.humidity + 42.0 * self.intensity), 1)
-            if "solar_radiation" in self.target_sensors:
-                rep.solar_radiation = round(min(1200.0, truth.solar_radiation + 350.0 * self.intensity), 1)
-            if "cooling_load" in self.target_sensors:
-                rep.cooling_load = round(max(0.5, truth.cooling_load - 12.0 * self.intensity), 2)
-            if "water_flow" in self.target_sensors:
-                # Hydraulic flow decoupling: zero flow reported during active pump operation!
-                rep.water_flow = 0.0
-            if "pressure" in self.target_sensors:
-                rep.pressure = round(truth.pressure + 2.8 * self.intensity, 2)
-            if "tank_level" in self.target_sensors:
-                rep.tank_level = round(min(100.0, truth.tank_level + 25.0 * self.intensity), 1)
-
-        # ---------------------------------------------------------------------
-        # 2. GRADUAL DRIFT: Smooth linear ramp that avoids sudden jump alarms
-        # ---------------------------------------------------------------------
-        elif self.attack_type == AttackType.DRIFT:
-            drift_rate = 0.25 * self.intensity * dt  # Ramp rate per second
-            self.drift_offset += drift_rate
-
-            if "temperature" in self.target_sensors:
-                rep.temperature = round(truth.temperature + self.drift_offset, 2)
-            if "cooling_load" in self.target_sensors:
-                rep.cooling_load = round(max(0.5, truth.cooling_load - self.drift_offset * 1.8), 2)
-            if "water_flow" in self.target_sensors:
-                rep.water_flow = round(max(0.0, truth.water_flow - self.drift_offset * 3.0), 1)
-            if "power_consumption" in self.target_sensors:
-                rep.power_consumption = round(max(0.5, truth.power_consumption - self.drift_offset * 1.2), 2)
-
-        # ---------------------------------------------------------------------
-        # 3. COORDINATED ATTACK: Multi-sensor falsification with masked plausibility
-        # ---------------------------------------------------------------------
-        elif self.attack_type == AttackType.COORDINATED:
-            if "humidity" in self.target_sensors or "false_storm" in self.target_sensors:
-                # Coordinated Torrential Deluge & Cloud Cover
-                rep.humidity = round(min(96.0, truth.humidity + 40.0 * self.intensity), 1)
-                rep.solar_radiation = round(max(30.0, 70.0 - 40.0 * self.intensity), 1)
-                rep.temperature = round(max(16.0, truth.temperature - 9.0 * self.intensity), 2)
-                rep.water_flow = round(truth.water_flow + 70.0 * self.intensity, 1)
-            else:
-                # Coordinated Heatwave & False Drought Spoofing:
-                # Attacker injects extreme ambient heat & intense solar radiation,
-                # while deceptively depressing cooling load & cutting irrigation delivery!
-                temp_boost = 13.0 * self.intensity
-                solar_boost = 320.0 * self.intensity
-                load_cut = 11.5 * self.intensity
-
-                rep.temperature = round(min(45.0, truth.temperature + temp_boost), 2)
-                rep.solar_radiation = round(min(1150.0, truth.solar_radiation + solar_boost), 1)
-                rep.cooling_load = round(max(1.0, truth.cooling_load - load_cut), 2)
-                rep.water_flow = round(max(0.0, truth.water_flow - 50.0 * self.intensity), 1)
-
-        # ---------------------------------------------------------------------
-        # 4. FREEZE ATTACK: Hold sensor at stale snapshot
-        # ---------------------------------------------------------------------
-        elif self.attack_type == AttackType.FREEZE:
-            for sensor in self.target_sensors:
-                if sensor not in self.frozen_values:
-                    self.frozen_values[sensor] = getattr(truth, sensor)
-                setattr(rep, sensor, self.frozen_values[sensor])
-
-        # ---------------------------------------------------------------------
-        # 5. NOISE ATTACK: High variance random walk
-        # ---------------------------------------------------------------------
-        elif self.attack_type == AttackType.NOISE:
-            for sensor in self.target_sensors:
-                current_val = getattr(truth, sensor)
-                if isinstance(current_val, (int, float)):
-                    noise = (random.random() - 0.5) * 10.0 * self.intensity
-                    setattr(rep, sensor, round(current_val + noise, 2))
-
-        # Always maintain valid timestamp
-        rep.timestamp = truth.timestamp
-        return rep
+        return self.controller.apply(truth)
 
     def get_attack_state(self) -> Dict[str, Any]:
-        """Return read-only attack state for API responses."""
+        """Export serialized attack state for API responses and frontend."""
         return {
-            "is_active": self.is_active,
-            "attack_type": self.attack_type.value if self.is_active else None,
-            "target_sensors": self.target_sensors if self.is_active else [],
-            "intensity": self.intensity if self.is_active else 0.0,
-            "stealth": self.stealth if self.is_active else False,
-            "elapsed_seconds": round(self.elapsed_seconds, 1) if self.is_active else 0.0
+            "is_active": self.controller.active,
+            "active": self.controller.active,
+            "attack_type": self._attack_type_str if self.controller.active else "NONE",
+            "type": self._attack_type_str if self.controller.active else "NONE",
+            "target_sensors": self._target_sensors if self.controller.active else [],
+            "intensity": self._intensity if self.controller.active else 0.0,
+            "stealth": self._stealth,
+            "controller_metadata": self.controller.get_metadata(),
         }

@@ -14,14 +14,18 @@ Endpoints:
 
 import asyncio
 import json
+import logging
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException
 
 from app.models.telemetry import (
     CustomAttackRequest,
-    SystemStatusResponse, AttackLaunchRequest, GenericResponse
+    SystemStatusResponse, AttackLaunchRequest, GenericResponse,
+    ThreatLevel
 )
 from app.services.orchestrator import orchestrator
+
 
 router = APIRouter(prefix="/api", tags=["Sentinel Twin System API"])
 
@@ -77,15 +81,64 @@ async def get_system_status():
         truth = active_service.step_truth(dt=0.5)
         reported = active_service.apply_attack(truth, dt=0.5)
         defense = active_service.evaluate_invariants(reported)
+
+        norm_invariants = []
+        for inv in defense.get("invariants", []):
+            norm_invariants.append({
+                "invariant_id": inv.get("id") or inv.get("invariant_id") or "INV_DOMAIN",
+                "name": inv.get("name", "Domain Invariant"),
+                "law": inv.get("law", "Domain Physical Law"),
+                "violated": bool(inv.get("violated", False)),
+                "residual": float(inv.get("residual", 0.0)),
+                "threshold": float(inv.get("threshold", 1.0)),
+                "description": str(inv.get("description", "")),
+            })
+
+        sensor_trust = defense.get("sensor_trust_scores", {})
+        if not sensor_trust:
+            sensor_trust = {k: (30.0 if k in defense.get("compromised_sensors", []) else 100.0) for k in reported.keys()}
+
+        healed = defense.get("healed_telemetry", dict(reported))
+
+        threat = defense.get("threat_level", "LOW")
+        mode = "DETECTED" if threat != "LOW" else "NOMINAL"
+
+        defense_result = {
+            "system_trust_score": float(defense.get("system_trust_score", 100.0)),
+            "threat_level": threat,
+            "sensor_trust_scores": sensor_trust,
+            "invariants": norm_invariants,
+            "compromised_sensors": defense.get("compromised_sensors", []),
+            "forensic_deduction": defense.get("forensic_deduction", "Domain telemetry verified."),
+            "healed_telemetry": healed,
+        }
+
+        sustainability = {
+            "water_wasted_liters": 0.0,
+            "energy_wasted_kwh": 0.0,
+            "carbon_emissions_kg": 0.0,
+            "financial_loss_inr": 0.0,
+            "financial_loss_usd": 0.0,
+        }
+
         return {
+            "timestamp": truth.get("timestamp") or datetime.now(timezone.utc).isoformat(),
             "active_domain": domain_manager.active_domain_id,
-            "system_mode": "DETECTED" if defense["threat_level"] != "LOW" else "NOMINAL",
+            "system_mode": mode,
+            "tick_index": orchestrator.tick_index,
             "ground_truth": truth,
             "reported_telemetry": reported,
-            "defense_result": defense,
-            "attack_state": {"is_active": active_service.is_attack_active}
+            "defense_result": defense_result,
+            "attack_state": {
+                "is_active": active_service.is_attack_active,
+                "active": active_service.is_attack_active,
+                "attack_type": "radio_gps_spoofing" if active_service.is_attack_active else "NONE",
+                "type": "radio_gps_spoofing" if active_service.is_attack_active else "NONE",
+            },
+            "sustainability_impact": sustainability,
         }
     return orchestrator.get_current_status()
+
 
 
 @router.get(
@@ -216,8 +269,13 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
             await asyncio.sleep(0.5)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception:
+    except asyncio.CancelledError:
         manager.disconnect(websocket)
+        raise
+    except Exception as exc:
+        logging.getLogger("uvicorn.error").warning(f"WebSocket closed: {exc}")
+        manager.disconnect(websocket)
+
 
 
 # -----------------------------------------------------------------------------

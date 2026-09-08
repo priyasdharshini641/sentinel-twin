@@ -505,13 +505,16 @@
       // Attack status
       const atk = data.attack_state;
       const atkStatus = document.getElementById('attack-status');
-      if (atk && atk.active) {
-        atkStatus.textContent = `ACTIVE: ${atk.type.toUpperCase()}`;
+      const isAtkActive = atk && (atk.is_active !== undefined ? atk.is_active : atk.active);
+      if (isAtkActive) {
+        const atkType = (atk.attack_type || atk.type || "ATTACK").toUpperCase();
+        atkStatus.textContent = `ACTIVE: ${atkType}`;
         atkStatus.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-rose-900 text-rose-300 pulse-danger";
       } else {
         atkStatus.textContent = "STANDBY";
         atkStatus.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-400";
       }
+
 
       // Render Invariants
       const invGrid = document.getElementById('invariants-grid');
