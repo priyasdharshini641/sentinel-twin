@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SENTINEL TWIN — Cyber-Physical Reality Dashboard</title>
+  <title>SENTINEL TWIN — Climate-Smart Agricultural Reality Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
@@ -13,30 +13,35 @@
     }
     .pulse-danger { animation: pulse-red 1.8s infinite ease-in-out; }
     .glass-card {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
       border: 1px solid rgba(51, 65, 85, 0.6);
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-black">
   
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur">
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50 backdrop-blur">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-          <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-emerald-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-wheat-awn text-white text-xl"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-300 bg-clip-text text-transparent">
-            SENTINEL TWIN
-          </h1>
-          <p class="text-xs text-slate-400 font-mono">Cyber-Physical Reality Engine & Spoofing Detection</p>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+              SENTINEL TWIN
+            </h1>
+            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              Agro-Cyber Reality Engine
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-mono">Zero-Trust Climate Infrastructure & Autonomous Irrigation Defense</p>
         </div>
       </div>
       
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
         <div id="mode-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800 flex items-center space-x-2">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           <span id="mode-text">SYSTEM NOMINAL</span>
@@ -54,6 +59,32 @@
 
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Top Action Bar: Standout Innovations -->
+    <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs">
+      <div class="flex items-center space-x-2 text-slate-400">
+        <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i>
+        <span class="font-semibold text-slate-300">Live Innovations:</span>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="openModal('benchmark')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 transition flex items-center space-x-1">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>ML Benchmark (Traditional vs CRE)</span>
+        </button>
+        <button onclick="openModal('causal-graph')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded border border-slate-700 transition flex items-center space-x-1">
+          <i class="fa-solid fa-network-wired"></i>
+          <span>Causal DAG Topology</span>
+        </button>
+        <button onclick="toggleSafeMode()" id="btn-safemode" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 transition flex items-center space-x-1">
+          <i class="fa-solid fa-shield-virus"></i>
+          <span>Safe-Mode Imputation: OFF</span>
+        </button>
+        <button onclick="openModal('forensics')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-purple-300 rounded border border-slate-700 transition flex items-center space-x-1">
+          <i class="fa-solid fa-file-shield"></i>
+          <span>Forensic Incident Dossier</span>
+        </button>
+      </div>
+    </div>
     
     <!-- Top Row: Defense & Attack Overview -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -83,10 +114,10 @@
         <div class="bg-slate-900/90 rounded-lg p-3 border border-slate-800 text-xs font-mono">
           <div class="text-slate-400 font-semibold mb-1 flex items-center space-x-1">
             <i class="fa-solid fa-magnifying-glass text-cyan-400"></i>
-            <span>Forensic Detective Analysis:</span>
+            <span>Detective Forensic Deduction:</span>
           </div>
           <div id="forensic-text" class="text-slate-300 leading-relaxed italic">
-            "All 4 coupled physical invariant equations hold within strict thermal, psychrometric, and hydraulic tolerances."
+            "Nominal operational telemetry. All reported physical relationships conform to expected baseline invariants."
           </div>
         </div>
       </div>
@@ -96,7 +127,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <i class="fa-solid fa-skull-crossbones text-rose-400"></i>
-            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Red Team Attack Injector (P2)</h2>
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Red Team Cyber-Physical Attack Lab (P2)</h2>
           </div>
           <span id="attack-status" class="px-2.5 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-400">STANDBY</span>
         </div>
@@ -105,26 +136,26 @@
           <div>
             <label class="text-xs text-slate-400 font-medium">Attack Vector</label>
             <select id="attack-type" class="mt-1 w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+              <option value="coordinated" selected>⭐ Coordinated Agro-Spoofing</option>
               <option value="fdi">False Data Injection (FDI)</option>
               <option value="drift">Stealth Gradual Drift</option>
-              <option value="coordinated" selected>Coordinated Multi-Sensor</option>
               <option value="freeze">Sensor Value Freeze</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs text-slate-400 font-medium">Target Sensor(s)</label>
+            <label class="text-xs text-slate-400 font-medium">Target Scenario</label>
             <select id="target-sensor" class="mt-1 w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose-500 focus:outline-none">
-              <option value="temperature">Temperature (°C)</option>
-              <option value="water_flow">Water Flow (L/min)</option>
-              <option value="pressure">Pressure (bar)</option>
-              <option value="cooling_load">Cooling Load (kW)</option>
-              <option value="coordinated" selected>Thermal Loop (Multi)</option>
+              <option value="coordinated" selected>False Drought (Spoof Soil Dry + Solar)</option>
+              <option value="temperature">Ambient Temperature (°C)</option>
+              <option value="water_flow">Irrigation Water Flow (L/min)</option>
+              <option value="pressure">Hydraulic Pressure (bar)</option>
+              <option value="cooling_load">Cooling Thermal Load (kW)</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs text-slate-400 font-medium">Intensity: <span id="intensity-val" class="font-mono text-rose-400">75%</span></label>
+            <label class="text-xs text-slate-400 font-medium">Attack Intensity: <span id="intensity-val" class="font-mono text-rose-400">75%</span></label>
             <input id="intensity-slider" type="range" min="10" max="100" value="75" class="mt-2 w-full accent-rose-500" />
           </div>
         </div>
@@ -151,12 +182,108 @@
 
     </div>
 
-    <!-- Middle: 4 Physical Invariants Verification Status -->
+    <!-- Middle: 3-Tier Agro-Cyber Decision Engine & 7-Activity Matrix -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- 3-Tier Scoring Card -->
+      <div class="glass-card rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
+            <i class="fa-solid fa-layer-group text-emerald-400"></i>
+            <span>3-Tier Decision Engine</span>
+          </h3>
+          <span class="text-[10px] text-slate-500 font-mono">Climate × Stats × Physics</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs font-mono">
+          <!-- Tier 1 -->
+          <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex justify-between items-center">
+            <div>
+              <div class="text-slate-400 font-semibold">Tier 1: Climate Severity</div>
+              <div id="tier1-label" class="text-[10px] text-slate-500">Nominal Agro-Climate Conditions</div>
+            </div>
+            <span id="tier1-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+              FAVOURABLE
+            </span>
+          </div>
+
+          <!-- Tier 2 -->
+          <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex justify-between items-center">
+            <div>
+              <div class="text-slate-400 font-semibold">Tier 2: Statistical Anomaly</div>
+              <div class="text-[10px] text-slate-500">Z-score & moving window bounds</div>
+            </div>
+            <span id="tier2-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+              NORMAL
+            </span>
+          </div>
+
+          <!-- Tier 3 -->
+          <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex justify-between items-center">
+            <div>
+              <div class="text-slate-400 font-semibold">Tier 3: Causal Reality (CRE)</div>
+              <div class="text-[10px] text-slate-500">First-Law & Hydraulic Conservation</div>
+            </div>
+            <span id="tier3-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+              CONSISTENT
+            </span>
+          </div>
+
+          <!-- System Controller Verdict -->
+          <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-emerald-200 mt-2">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold">Automated Controller:</span>
+              <span id="controller-verdict" class="text-emerald-400 font-bold">NORMAL OPERATION</span>
+            </div>
+            <p id="controller-explanation" class="text-[10px] text-slate-300 leading-relaxed font-sans">
+              Agro-climate and irrigation physical loops fully synchronized with natural environmental laws.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-Activity Farming Suitability Matrix (From Teammate's Screenshot) -->
+      <div class="glass-card rounded-xl p-5 space-y-3 lg:col-span-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
+            <i class="fa-solid fa-calendar-check text-emerald-400"></i>
+            <span>7-Activity Farming Suitability Matrix</span>
+          </h3>
+          <div class="flex items-center space-x-3 text-[11px]">
+            <span class="flex items-center space-x-1 text-emerald-400"><span>🟢</span><span>Favorable</span></span>
+            <span class="flex items-center space-x-1 text-amber-400"><span>🟡</span><span>Caution</span></span>
+            <span class="flex items-center space-x-1 text-rose-400"><span>🔴</span><span>Unfavorable</span></span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="py-2 px-3">Farming Activity</th>
+                <th class="py-2 px-3">Suitability</th>
+                <th class="py-2 px-3 text-center">Temp</th>
+                <th class="py-2 px-3 text-center">Humidity</th>
+                <th class="py-2 px-3 text-center">Rain</th>
+                <th class="py-2 px-3 text-center">Solar/UV</th>
+                <th class="py-2 px-3">Operational Recommendation</th>
+              </tr>
+            </thead>
+            <tbody id="farming-matrix-body" class="divide-y divide-slate-800/60 text-slate-300">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Middle-Bottom: 4 Physical Invariants Verification Status -->
     <div class="glass-card rounded-xl p-5 space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-2">
           <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
-          <span>Governing Physical Invariant Contracts</span>
+          <span>Governing Physical Invariant Contracts (CPIC)</span>
         </h3>
         <span class="text-xs text-slate-500 font-mono">Real-time Residual Verification</span>
       </div>
@@ -207,6 +334,24 @@
 
   </main>
 
+  <!-- Generic Modal for Benchmark / Causal DAG / Forensics -->
+  <div id="info-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-700 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 id="modal-title" class="text-base font-bold text-slate-100 flex items-center space-x-2"></h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-200 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="modal-content" class="text-xs font-mono text-slate-300 space-y-3 leading-relaxed"></div>
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs">
+          Close Window
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const slider = document.getElementById('intensity-slider');
     const intensityVal = document.getElementById('intensity-val');
@@ -220,8 +365,8 @@
       { key: "solar_radiation", label: "Solar Radiation", unit: "W/m²", icon: "fa-sun" },
       { key: "cooling_load", label: "Cooling Thermal Load", unit: "kW", icon: "fa-snowflake" },
       { key: "power_consumption", label: "Total Power Draw", unit: "kW", icon: "fa-bolt" },
-      { key: "water_flow", label: "Water Flow Rate", unit: "L/min", icon: "fa-water" },
-      { key: "tank_level", label: "Buffer Tank Level", unit: "%", icon: "fa-database" },
+      { key: "water_flow", label: "Irrigation Water Flow", unit: "L/min", icon: "fa-water" },
+      { key: "tank_level", label: "Storage Tank Level", unit: "%", icon: "fa-database" },
       { key: "pump_status", label: "Pump Actuator Status", unit: "State", icon: "fa-power-off" },
       { key: "pump_speed", label: "Pump Motor Speed", unit: "%", icon: "fa-gauge" },
       { key: "pressure", label: "Hydraulic Pressure", unit: "bar", icon: "fa-tachograph-digital" },
@@ -237,6 +382,72 @@
       } catch (err) {
         console.error("Failed to poll status:", err);
       }
+    }
+
+    async function fetchAgriculture() {
+      try {
+        const [matRes, decRes] = await Promise.all([
+          fetch('/api/agriculture/matrix'),
+          fetch('/api/agriculture/decision')
+        ]);
+        if (matRes.ok && decRes.ok) {
+          const matData = await matRes.json();
+          const decData = await decRes.json();
+          renderAgriculture(matData.matrix, decData);
+        }
+      } catch (err) {
+        console.error("Failed to poll agriculture:", err);
+      }
+    }
+
+    function renderAgriculture(matrix, decision) {
+      // 1. Render 3-Tier Scores
+      const t1 = decision.tier1_climate;
+      const t2 = decision.tier2_statistical;
+      const t3 = decision.tier3_causal;
+
+      document.getElementById('tier1-label').textContent = t1.label;
+      const t1Badge = document.getElementById('tier1-badge');
+      t1Badge.textContent = t1.level;
+      t1Badge.className = t1.level === 'SEVERE' ? "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800" : (t1.level === 'WARNING' ? "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800" : "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800");
+
+      const t2Badge = document.getElementById('tier2-badge');
+      t2Badge.textContent = t2.status;
+      t2Badge.className = t2.status === 'OUTLIER' ? "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800" : "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800";
+
+      const t3Badge = document.getElementById('tier3-badge');
+      t3Badge.textContent = t3.status;
+      t3Badge.className = t3.status === 'VIOLATED' ? "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800 pulse-danger" : (t3.status === 'SUSPICIOUS' ? "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800" : "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800");
+
+      const verdEl = document.getElementById('controller-verdict');
+      verdEl.textContent = decision.system_decision.replace('_', ' ');
+      verdEl.className = decision.system_decision === 'ATTACK_VIOLATION' ? "text-rose-400 font-bold underline" : (decision.system_decision === 'GENUINE_CLIMATE_EVENT' ? "text-amber-400 font-bold" : "text-emerald-400 font-bold");
+      document.getElementById('controller-explanation').textContent = decision.explanation;
+
+      // 2. Render 7-Activity Matrix
+      const tbody = document.getElementById('farming-matrix-body');
+      tbody.innerHTML = '';
+      matrix.forEach(row => {
+        let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">🟢 FAVORABLE</span>`;
+        if (row.status === 'CAUTION') {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">🟡 CAUTION</span>`;
+        } else if (row.status === 'UNFAVORABLE') {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">🔴 UNFAVORABLE</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-900/50";
+        tr.innerHTML = `
+          <td class="py-2 px-3 font-semibold text-slate-200">${row.activity}</td>
+          <td class="py-2 px-3">${statusBadge}</td>
+          <td class="py-2 px-3 text-center text-xs">${row.factors.temp || '🟢'}</td>
+          <td class="py-2 px-3 text-center text-xs">${row.factors.humidity || '🟢'}</td>
+          <td class="py-2 px-3 text-center text-xs">${row.factors.rain || '🟢'}</td>
+          <td class="py-2 px-3 text-center text-xs">${row.factors.solar || '🟢'}</td>
+          <td class="py-2 px-3 text-slate-400 text-[11px] font-sans">${row.reason}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     function renderDashboard(data) {
@@ -400,6 +611,7 @@
         const json = await res.json();
         showMsg("Attack active!", "text-rose-400");
         fetchStatus();
+        fetchAgriculture();
       } catch (err) {
         showMsg("Launch failed: " + err, "text-red-500");
       }
@@ -411,6 +623,7 @@
         await fetch('/api/attack/stop', { method: 'POST' });
         showMsg("Attack stopped. Restoring nominal physics.", "text-emerald-400");
         fetchStatus();
+        fetchAgriculture();
       } catch (err) {
         showMsg("Stop failed: " + err, "text-red-500");
       }
@@ -422,9 +635,113 @@
         await fetch('/api/system/reset', { method: 'POST' });
         showMsg("System state reset to nominal zero.", "text-cyan-400");
         fetchStatus();
+        fetchAgriculture();
       } catch (err) {
         showMsg("Reset failed: " + err, "text-red-500");
       }
+    }
+
+    async function toggleSafeMode() {
+      try {
+        const res = await fetch('/api/mitigate/safe-mode', { method: 'POST' });
+        const json = await res.json();
+        const active = json.mitigation.safe_mode_active;
+        const btn = document.getElementById('btn-safemode');
+        btn.innerHTML = `<i class="fa-solid fa-shield-virus"></i><span>Safe-Mode Imputation: ${active ? 'ACTIVE 🟢' : 'OFF'}</span>`;
+        btn.className = active ? "px-3 py-1 bg-emerald-900 text-emerald-200 rounded border border-emerald-700 transition flex items-center space-x-1" : "px-3 py-1 bg-slate-800 text-amber-300 rounded border border-slate-700 transition flex items-center space-x-1";
+      } catch (err) {
+        console.error("Safe-mode toggle failed:", err);
+      }
+    }
+
+    async function openModal(type) {
+      const modal = document.getElementById('info-modal');
+      const title = document.getElementById('modal-title');
+      const content = document.getElementById('modal-content');
+      modal.classList.remove('hidden');
+
+      if (type === 'benchmark') {
+        title.innerHTML = `<i class="fa-solid fa-chart-line text-cyan-400"></i><span>Machine Learning vs Causal Reality Engine Benchmark</span>`;
+        content.innerHTML = `<div class="text-slate-400">Querying real-time benchmark comparative model...</div>`;
+        try {
+          const res = await fetch('/api/benchmark');
+          const d = await res.json();
+          content.innerHTML = `
+            <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2">
+              <div class="font-bold text-slate-200">${d.benchmark_name}</div>
+              <div class="text-slate-400 leading-relaxed">${d.proof_description}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 rounded border ${d.models.traditional_ml.caught ? 'border-emerald-700 bg-emerald-950/30' : 'border-rose-800 bg-rose-950/30'}">
+                <div class="font-bold text-slate-300 mb-1">Traditional Model (${d.models.traditional_ml.model_name})</div>
+                <div class="text-xs">Verdict: <strong class="${d.models.traditional_ml.caught ? 'text-emerald-400' : 'text-rose-400'}">${d.models.traditional_ml.verdict}</strong></div>
+                <div class="text-[10px] text-slate-400 mt-1">${d.models.traditional_ml.explanation}</div>
+              </div>
+              <div class="p-3 rounded border border-emerald-700 bg-emerald-950/30">
+                <div class="font-bold text-slate-300 mb-1">Sentinel Twin (${d.models.causal_reality_engine.model_name})</div>
+                <div class="text-xs">Verdict: <strong class="text-emerald-400">${d.models.causal_reality_engine.verdict}</strong></div>
+                <div class="text-[10px] text-slate-400 mt-1">${d.models.causal_reality_engine.explanation}</div>
+              </div>
+            </div>
+            <div class="text-[11px] text-cyan-300 italic">"Traditional machine learning evaluates numbers in isolation. Sentinel Twin evaluates whether those numbers can coexist in the physical universe."</div>
+          `;
+        } catch (e) {
+          content.innerHTML = `<div class="text-rose-400">Failed to load benchmark: ${e}</div>`;
+        }
+      } else if (type === 'causal-graph') {
+        title.innerHTML = `<i class="fa-solid fa-network-wired text-emerald-400"></i><span>Causal DAG Physical Topology Status</span>`;
+        content.innerHTML = `<div class="text-slate-400">Traversing causal physical links...</div>`;
+        try {
+          const res = await fetch('/api/causal-graph');
+          const d = await res.json();
+          let html = `<div class="font-bold text-slate-300 mb-2">Topology State: ${d.status} (Broken Links: ${d.fractured_links_count})</div><div class="space-y-2">`;
+          d.links.forEach(l => {
+            html += `
+              <div class="p-2.5 rounded border ${l.fractured ? 'border-rose-800 bg-rose-950/40' : 'border-slate-800 bg-slate-900/60'} flex justify-between items-center text-xs">
+                <div>
+                  <div class="font-bold text-slate-200">${l.source} ➔ ${l.target}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">${l.governing_law}</div>
+                </div>
+                <span class="${l.fractured ? 'text-rose-400 font-bold' : 'text-emerald-400'}">${l.status}</span>
+              </div>
+            `;
+          });
+          html += `</div>`;
+          content.innerHTML = html;
+        } catch (e) {
+          content.innerHTML = `<div class="text-rose-400">Failed to load causal graph: ${e}</div>`;
+        }
+      } else if (type === 'forensics') {
+        title.innerHTML = `<i class="fa-solid fa-file-shield text-purple-400"></i><span>Executive Forensic Incident Dossier</span>`;
+        content.innerHTML = `<div class="text-slate-400">Compiling cryptographic forensic dossier...</div>`;
+        try {
+          const res = await fetch('/api/forensics/dossier');
+          const d = await res.json();
+          content.innerHTML = `
+            <div class="p-3 bg-slate-900 rounded border border-slate-800 space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Dossier ID: <strong class="text-slate-200">${d.dossier_id}</strong></span>
+                <span class="text-slate-400">${new Date(d.generated_at).toLocaleTimeString()}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 font-mono break-all">SHA-256 Digest: ${d.cryptographic_hash}</div>
+            </div>
+            <div class="p-3 rounded border border-slate-800 bg-slate-900/50 space-y-1">
+              <div class="font-bold text-slate-300">Forensic Deduction:</div>
+              <div class="text-slate-200 italic leading-relaxed">"${d.forensic_narrative}"</div>
+            </div>
+            <div class="p-3 rounded border border-slate-800 bg-slate-900/50 space-y-1">
+              <div class="font-bold text-slate-300">Recommended Operational Response:</div>
+              <div class="text-cyan-300 font-medium">${d.recommended_operational_response}</div>
+            </div>
+          `;
+        } catch (e) {
+          content.innerHTML = `<div class="text-rose-400">Failed to load dossier: ${e}</div>`;
+        }
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('info-modal').classList.add('hidden');
     }
 
     function showMsg(text, colorClass = "text-slate-400") {
@@ -436,7 +753,11 @@
 
     // Start 1 Hz Polling
     fetchStatus();
-    setInterval(fetchStatus, 1000);
+    fetchAgriculture();
+    setInterval(() => {
+      fetchStatus();
+      fetchAgriculture();
+    }, 1000);
   </script>
 </body>
 </html>

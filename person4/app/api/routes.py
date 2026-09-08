@@ -212,3 +212,45 @@ async def activate_safe_mode():
 )
 async def get_forensic_dossier():
     return orchestrator.get_forensic_dossier()
+
+
+# -----------------------------------------------------------------------------
+# 4. CLIMATE-SMART AGRICULTURE & DECISION MATRIX ENDPOINTS
+# -----------------------------------------------------------------------------
+from app.services.agriculture import agricultural_engine
+
+
+@router.get(
+    "/agriculture/matrix",
+    summary="7-Activity Farming Suitability Matrix",
+    description="Evaluates real-time agro-climate and irrigation parameters across Sowing, Irrigation, Fertilizer, Pesticide, Weeding, Harvesting, and Drying."
+)
+async def get_farming_matrix():
+    status = orchestrator.get_current_status()
+    matrix = agricultural_engine.evaluate_farming_matrix(status.reported_telemetry)
+    return {
+        "crop_stage": agricultural_engine.crop_stage,
+        "activities_count": len(matrix),
+        "matrix": matrix
+    }
+
+
+@router.get(
+    "/agriculture/decision",
+    summary="3-Tier Agro-Cyber Decision Engine",
+    description="Synthesizes Climate Severity (Tier 1), Statistical Outlier (Tier 2), and Causal Reality (Tier 3) into an automated irrigation decision."
+)
+async def get_agricultural_decision():
+    status = orchestrator.get_current_status()
+    # Check if any invariant violated
+    violated = [inv.name for inv in status.defense_result.invariants if inv.violated]
+    is_causal = len(violated) > 0
+    is_outlier = status.defense_result.threat_level.value in ["ELEVATED", "CRITICAL"]
+
+    decision = agricultural_engine.compute_3tier_decision(
+        telemetry=status.reported_telemetry,
+        is_statistical_outlier=is_outlier,
+        is_causal_violation=is_causal,
+        violated_invariants=violated
+    )
+    return decision

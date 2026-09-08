@@ -201,3 +201,43 @@ def test_forensic_dossier():
     assert "dossier_id" in data
     assert "evidentiary_sha256_hash" in data
     assert len(data["evidentiary_sha256_hash"]) == 64
+
+
+def test_agriculture_matrix_endpoint():
+    """Verify 7-activity farming suitability matrix endpoint."""
+    resp = client.get("/api/agriculture/matrix")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "matrix" in data
+    assert data["activities_count"] == 7
+    activities = [item["activity"] for item in data["matrix"]]
+    expected = ["Sowing", "Irrigation", "Fertilizer Application", "Pesticide Spraying", "Weeding", "Harvesting", "Drying"]
+    for exp in expected:
+        assert exp in activities
+    for item in data["matrix"]:
+        assert item["status"] in ["FAVORABLE", "CAUTION", "UNFAVORABLE"]
+        assert "reason" in item
+        assert "factors" in item
+
+
+def test_agriculture_decision_endpoint():
+    """Verify 3-tier decision engine endpoint under nominal and attack conditions."""
+    # 1. Nominal condition
+    resp = client.get("/api/agriculture/decision")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "system_decision" in data
+    assert data["system_decision"] == "NORMAL_OPERATION"
+    assert data["tier3_causal"]["status"] == "CONSISTENT"
+    assert data["action"] == "NOMINAL_MONITORING"
+
+    # 2. Under attack condition
+    client.post("/api/attack/launch", json={"attack_type": "coordinated", "intensity": 0.9})
+    resp_attack = client.get("/api/agriculture/decision")
+    assert resp_attack.status_code == 200
+    data_attack = resp_attack.json()
+    assert data_attack["tier3_causal"]["status"] == "VIOLATED"
+    assert data_attack["system_decision"] == "ATTACK_VIOLATION"
+    assert data_attack["action"] == "INTERLOCK_ENGAGED"
+
+
