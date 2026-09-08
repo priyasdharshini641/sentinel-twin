@@ -32,6 +32,7 @@ class AttackEngineService:
         # Stateful attack accumulators
         self.drift_offset: float = 0.0
         self.frozen_values: Dict[str, Any] = {}
+        self.custom_offsets: Dict[str, float] = {}
 
     def launch_attack(self, request: AttackLaunchRequest) -> Dict[str, Any]:
         """Activate an attack scenario with configured parameters."""
@@ -69,6 +70,27 @@ class AttackEngineService:
         """Reset internal attack engine state."""
         self.stop_attack()
 
+
+    def launch_custom_attack(self, request) -> Dict[str, Any]:
+        """Activate judge-customized sensor injection."""
+        self.is_active = True
+        self.attack_type = AttackType.COORDINATED
+        self.target_sensors = list(request.target_sensors.keys())
+        self.intensity = 0.8
+        self.stealth = request.stealth_mode
+        self.elapsed_seconds = 0.0
+        self.duration_seconds = 0.0
+        self.drift_offset = 0.0
+        self.frozen_values = {}
+        self.custom_offsets = request.target_sensors
+
+        return {
+            "status": "CUSTOM_ATTACK_LAUNCHED",
+            "hacker_alias": request.hacker_alias,
+            "injected_perturbations": request.target_sensors,
+            "stealth": request.stealth_mode
+        }
+
     def apply(self, truth: Telemetry, dt: float = 1.0) -> Telemetry:
         """
         Produce reported telemetry by perturbing ground truth if attack is active.
@@ -88,6 +110,17 @@ class AttackEngineService:
         rep = copy.deepcopy(truth)
 
         # ---------------------------------------------------------------------
+        
+        # If custom attack is running with exact sensor offsets:
+        if hasattr(self, "custom_offsets") and self.custom_offsets:
+            for s_name, offset in self.custom_offsets.items():
+                if hasattr(rep, s_name):
+                    val = getattr(rep, s_name)
+                    if isinstance(val, (int, float)):
+                        setattr(rep, s_name, round(val + offset, 2))
+            rep.timestamp = truth.timestamp
+            return rep
+
         # 1. FALSE DATA INJECTION (FDI): Step-function abrupt bias
         # ---------------------------------------------------------------------
         if self.attack_type == AttackType.FDI:

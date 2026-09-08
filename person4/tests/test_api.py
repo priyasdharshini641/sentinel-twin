@@ -140,3 +140,64 @@ def test_health_check_dynamic_under_attack():
     assert "COMPROMISED" in resp_attack["status"]
     assert resp_attack["cyber_physical_health"] == "COMPROMISED"
     assert resp_attack["active_attack"] is True
+
+
+def test_benchmark_endpoint():
+    """Verify live benchmark returns both Isolation Forest and Causal Reality Engine results."""
+    # When nominal
+    resp = client.get("/api/benchmark")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "traditional_ml" in data
+    assert "causal_reality_engine" in data
+    assert data["traditional_ml"]["model_name"] == "Isolation Forest (scikit-learn)"
+    assert "Causal Reality Engine" in data["causal_reality_engine"]["model_name"]
+
+
+def test_causal_graph_endpoint():
+    """Verify Causal Graph DAG returns nodes and physical invariant edges."""
+    resp = client.get("/api/causal-graph")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert len(data["nodes"]) >= 9
+    assert len(data["edges"]) >= 4
+    # Check that thermodynamic and motor affinity edges exist
+    edge_ids = [e["id"] for e in data["edges"]]
+    assert "edge_thermodynamics" in edge_ids
+    assert "edge_motor_affinity" in edge_ids
+
+
+def test_judge_custom_hacker_sandbox():
+    """Verify judge can inject custom sensor perturbations."""
+    payload = {
+        "hacker_alias": "Judge Alice",
+        "target_sensors": {"temperature": -10.0, "water_flow": 45.0},
+        "stealth_mode": True
+    }
+    resp = client.post("/api/attack/custom", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "SUCCESS"
+    assert data["data"]["hacker_alias"] == "Judge Alice"
+
+
+def test_safe_mode_mitigation():
+    """Verify safe-mode mitigation and virtual sensor imputation."""
+    resp = client.post("/api/mitigate/safe-mode")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "SUCCESS"
+    assert data["mitigation"]["status"] == "SAFE_MODE_ENGAGED"
+    assert "synthesized_telemetry" in data["telemetry_stream"]
+
+
+def test_forensic_dossier():
+    """Verify Sherlock forensic dossier with SHA-256 cryptographic hash."""
+    resp = client.get("/api/forensics/dossier")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "dossier_id" in data
+    assert "evidentiary_sha256_hash" in data
+    assert len(data["evidentiary_sha256_hash"]) == 64

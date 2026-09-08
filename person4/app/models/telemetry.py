@@ -63,6 +63,16 @@ class ThreatLevel(str, Enum):
 # ============================================================================
 # 3. REQUEST / RESPONSE SCHEMAS
 # ============================================================================
+
+
+class CustomAttackRequest(BaseModel):
+    hacker_alias: str = Field(default="Judge Hacker", description="Alias of the attacker/judge on stage")
+    target_sensors: Dict[str, float] = Field(
+        default_factory=lambda: {"temperature": -8.0, "cooling_load": -12.0},
+        description="Sensor perturbation offsets (e.g. {'temperature': -8.0, 'water_flow': +30.0})"
+    )
+    stealth_mode: bool = Field(default=True, description="Evade single-sensor statistical moving average thresholds")
+
 class AttackLaunchRequest(BaseModel):
     attack_type: AttackType = Field(
         default=AttackType.COORDINATED,

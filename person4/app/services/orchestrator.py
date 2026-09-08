@@ -1,3 +1,7 @@
+from app.services.benchmark import benchmark_service
+from app.services.causal_graph import causal_graph_service
+from app.services.self_healing import self_healing_service
+from app.services.forensics import forensic_service
 """
 SENTINEL TWIN — P4 Core Integration Orchestrator
 Role: P4 (System Pipeline & Integration Engineer)
@@ -172,6 +176,42 @@ class Orchestrator:
             "status": "SYSTEM_RESET",
             "message": "Physical digital twin, red team vectors, and sustainability meters reset to nominal."
         }
+
+
+
+    def launch_custom_attack(self, request) -> Dict[str, Any]:
+        result = self.p2.launch_custom_attack(request)
+        self._tick(dt=0.1)
+        return result
+
+    def get_benchmark_comparison(self) -> Dict[str, Any]:
+        status = self.get_current_status()
+        truth = self.p1.step(dt=0.0)
+        reported = self.p2.apply(truth, dt=0.0)
+        return benchmark_service.evaluate(reported, status.defense_result, self.p2.is_active)
+
+    def get_causal_graph(self) -> Dict[str, Any]:
+        status = self.get_current_status()
+        truth = self.p1.step(dt=0.0)
+        reported = self.p2.apply(truth, dt=0.0)
+        return causal_graph_service.get_graph_topology(reported, status.defense_result)
+
+    def get_forensic_dossier(self) -> Dict[str, Any]:
+        status = self.get_current_status()
+        truth = self.p1.step(dt=0.0)
+        reported = self.p2.apply(truth, dt=0.0)
+        return forensic_service.generate_dossier(
+            reported, status.defense_result, status.sustainability_impact, self.p2.get_attack_state()
+        )
+
+    def activate_safe_mode(self) -> Dict[str, Any]:
+        return self_healing_service.activate_safe_mode()
+
+    def get_healed_stream(self) -> Dict[str, Any]:
+        status = self.get_current_status()
+        truth = self.p1.step(dt=0.0)
+        reported = self.p2.apply(truth, dt=0.0)
+        return self_healing_service.generate_reconstructed_stream(reported, status.defense_result)
 
 
 # Global singleton instance for FastAPI injection

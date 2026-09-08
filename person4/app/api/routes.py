@@ -18,6 +18,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, HTTPException
 
 from app.models.telemetry import (
+    CustomAttackRequest,
     SystemStatusResponse, AttackLaunchRequest, GenericResponse
 )
 from app.services.orchestrator import orchestrator
@@ -152,3 +153,62 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+
+
+# -----------------------------------------------------------------------------
+# 3. STANDOUT INNOVATION ENDPOINTS
+# -----------------------------------------------------------------------------
+@router.get(
+    "/benchmark",
+    summary="Live ML Benchmark (Isolation Forest vs Causal Reality Engine)",
+    description="Mathematical proof: Traditional ML is fooled by coordinated stealth spoofing, while Sentinel Twin catches it."
+)
+async def get_benchmark():
+    return orchestrator.get_benchmark_comparison()
+
+
+@router.get(
+    "/causal-graph",
+    summary="Structured Cyber-Physical Causal DAG Graph",
+    description="Directed graph topology with real-time physical invariant bonds (Thermodynamics, Bernoulli, Motor Affinity) and fracture states."
+)
+async def get_causal_graph():
+    return orchestrator.get_causal_graph()
+
+
+@router.post(
+    "/attack/custom",
+    summary="Judge's Live Hacker Sandbox",
+    description="Allows judges or red-teamers to inject custom sensor perturbations live on stage to test system resilience."
+)
+async def launch_custom_attack(request: CustomAttackRequest):
+    result = orchestrator.launch_custom_attack(request)
+    return GenericResponse(
+        status="SUCCESS",
+        message=f"Custom hacker injection active from '{request.hacker_alias}'.",
+        data=result
+    )
+
+
+@router.post(
+    "/mitigate/safe-mode",
+    summary="Zero-Downtime Safe-Mode Virtual Sensor Imputation",
+    description="Activates real-time virtual telemetry imputation by inverting physical invariant laws to insulate automated controllers."
+)
+async def activate_safe_mode():
+    res = orchestrator.activate_safe_mode()
+    stream = orchestrator.get_healed_stream()
+    return {
+        "status": "SUCCESS",
+        "mitigation": res,
+        "telemetry_stream": stream
+    }
+
+
+@router.get(
+    "/forensics/dossier",
+    summary="Sherlock Digital Forensic Incident Dossier",
+    description="Generates an executive forensic security incident dossier with cryptographic SHA-256 evidence digest and plain-English deduction."
+)
+async def get_forensic_dossier():
+    return orchestrator.get_forensic_dossier()
