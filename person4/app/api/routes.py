@@ -63,13 +63,28 @@ async def switch_domain(domain_id: str = Query(..., description="Target sector I
 # -----------------------------------------------------------------------------
 # 1. REST ENDPOINTS
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# 1. REST ENDPOINTS (DOMAIN-AWARE)
+# -----------------------------------------------------------------------------
 @router.get(
     "/system/status",
-    response_model=SystemStatusResponse,
     summary="Get Current System Status",
-    description="Returns the real-time unified state including P1 ground truth, P2 reported telemetry, P3 causal defense, and sustainability impact."
+    description="Returns the real-time unified state including ground truth, reported telemetry, causal defense, and blast radius for the active enterprise domain."
 )
 async def get_system_status():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        truth = active_service.step_truth(dt=0.5)
+        reported = active_service.apply_attack(truth, dt=0.5)
+        defense = active_service.evaluate_invariants(reported)
+        return {
+            "active_domain": domain_manager.active_domain_id,
+            "system_mode": "DETECTED" if defense["threat_level"] != "LOW" else "NOMINAL",
+            "ground_truth": truth,
+            "reported_telemetry": reported,
+            "defense_result": defense,
+            "attack_state": {"is_active": active_service.is_attack_active}
+        }
     return orchestrator.get_current_status()
 
 
@@ -89,9 +104,17 @@ async def get_telemetry_history(
     "/attack/launch",
     response_model=GenericResponse,
     summary="Launch Cyber-Physical Attack",
-    description="Injects false data, gradual drift, coordinated spoofing, or freeze attacks into the telemetry stream."
+    description="Injects false data, gradual drift, coordinated spoofing, or radio GPS spoofing into the active domain."
 )
 async def launch_attack(request: AttackLaunchRequest):
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        active_service.is_attack_active = True
+        return GenericResponse(
+            status="SUCCESS",
+            message=f"Attack activated for active domain '{domain_manager.active_domain_id}'.",
+            data={"domain": domain_manager.active_domain_id, "is_attack_active": True}
+        )
     result = orchestrator.launch_attack(request)
     return GenericResponse(
         status="SUCCESS",
@@ -107,6 +130,14 @@ async def launch_attack(request: AttackLaunchRequest):
     description="Terminates all active perturbations and restores reported telemetry to ground truth."
 )
 async def stop_attack():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        active_service.is_attack_active = False
+        return GenericResponse(
+            status="SUCCESS",
+            message=f"Attack stopped for domain '{domain_manager.active_domain_id}'. Telemetry restored to nominal truth.",
+            data={"domain": domain_manager.active_domain_id, "is_attack_active": False}
+        )
     result = orchestrator.stop_attack()
     return GenericResponse(
         status="SUCCESS",
@@ -198,15 +229,27 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     description="Mathematical proof: Traditional ML is fooled by coordinated stealth spoofing, while Sentinel Twin catches it."
 )
 async def get_benchmark():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        truth = active_service.step_truth(dt=0.0)
+        reported = active_service.apply_attack(truth, dt=0.0)
+        defense = active_service.evaluate_invariants(reported)
+        return active_service.evaluate_benchmark(reported, defense, active_service.is_attack_active)
     return orchestrator.get_benchmark_comparison()
 
 
 @router.get(
     "/causal-graph",
     summary="Structured Cyber-Physical Causal DAG Graph",
-    description="Directed graph topology with real-time physical invariant bonds (Thermodynamics, Bernoulli, Motor Affinity) and fracture states."
+    description="Directed graph topology with real-time physical invariant bonds for the active domain."
 )
 async def get_causal_graph():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        truth = active_service.step_truth(dt=0.0)
+        reported = active_service.apply_attack(truth, dt=0.0)
+        defense = active_service.evaluate_invariants(reported)
+        return active_service.get_causal_graph(reported, defense)
     return orchestrator.get_causal_graph()
 
 
@@ -230,6 +273,18 @@ async def launch_custom_attack(request: CustomAttackRequest):
     description="Activates real-time virtual telemetry imputation by inverting physical invariant laws to insulate automated controllers."
 )
 async def activate_safe_mode():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        truth = active_service.step_truth(dt=0.0)
+        reported = active_service.apply_attack(truth, dt=0.0)
+        defense = active_service.evaluate_invariants(reported)
+        res = active_service.self_heal(reported, defense)
+        return {
+            "status": "SUCCESS",
+            "domain": domain_manager.active_domain_id,
+            "mitigation": {"status": "SAFE_MODE_ENGAGED", "mode": "VIRTUAL_IMPUTATION_ACTIVE"},
+            "telemetry_stream": res
+        }
     res = orchestrator.activate_safe_mode()
     stream = orchestrator.get_healed_stream()
     return {
@@ -245,6 +300,14 @@ async def activate_safe_mode():
     description="Generates an executive forensic security incident dossier with cryptographic SHA-256 evidence digest and plain-English deduction."
 )
 async def get_forensic_dossier():
+    active_service = domain_manager.get_domain_service()
+    if active_service:
+        truth = active_service.step_truth(dt=0.0)
+        reported = active_service.apply_attack(truth, dt=0.0)
+        defense = active_service.evaluate_invariants(reported)
+        return active_service.generate_forensic_dossier(
+            reported, defense, None, {"is_active": active_service.is_attack_active}
+        )
     return orchestrator.get_forensic_dossier()
 
 
