@@ -124,16 +124,21 @@ class AttackEngineService:
         # 1. FALSE DATA INJECTION (FDI): Step-function abrupt bias
         # ---------------------------------------------------------------------
         if self.attack_type == AttackType.FDI:
-            offset_mag = 8.0 * self.intensity
+            offset_mag = 13.5 * self.intensity
             if "temperature" in self.target_sensors:
-                # Spoof ambient temperature artificially cold (e.g. -8°C offset)
-                rep.temperature = round(truth.temperature - offset_mag, 2)
+                # Spoof ambient temperature into extreme heatwave (e.g. +13.5°C -> 42°C)
+                rep.temperature = round(truth.temperature + offset_mag, 2)
+            if "humidity" in self.target_sensors:
+                rep.humidity = round(min(98.0, truth.humidity + 42.0 * self.intensity), 1)
             if "solar_radiation" in self.target_sensors:
-                rep.solar_radiation = round(max(0.0, truth.solar_radiation - 350.0 * self.intensity), 1)
+                rep.solar_radiation = round(min(1200.0, truth.solar_radiation + 350.0 * self.intensity), 1)
             if "cooling_load" in self.target_sensors:
                 rep.cooling_load = round(max(0.5, truth.cooling_load - 12.0 * self.intensity), 2)
             if "water_flow" in self.target_sensors:
-                rep.water_flow = round(truth.water_flow + 60.0 * self.intensity, 1)
+                # Hydraulic flow decoupling: zero flow reported during active pump operation!
+                rep.water_flow = 0.0
+            if "pressure" in self.target_sensors:
+                rep.pressure = round(truth.pressure + 2.8 * self.intensity, 2)
             if "tank_level" in self.target_sensors:
                 rep.tank_level = round(min(100.0, truth.tank_level + 25.0 * self.intensity), 1)
 
@@ -141,13 +146,15 @@ class AttackEngineService:
         # 2. GRADUAL DRIFT: Smooth linear ramp that avoids sudden jump alarms
         # ---------------------------------------------------------------------
         elif self.attack_type == AttackType.DRIFT:
-            drift_rate = 0.15 * self.intensity * dt  # Ramp rate per second
+            drift_rate = 0.25 * self.intensity * dt  # Ramp rate per second
             self.drift_offset += drift_rate
 
             if "temperature" in self.target_sensors:
-                rep.temperature = round(truth.temperature - self.drift_offset, 2)
+                rep.temperature = round(truth.temperature + self.drift_offset, 2)
             if "cooling_load" in self.target_sensors:
                 rep.cooling_load = round(max(0.5, truth.cooling_load - self.drift_offset * 1.8), 2)
+            if "water_flow" in self.target_sensors:
+                rep.water_flow = round(max(0.0, truth.water_flow - self.drift_offset * 3.0), 1)
             if "power_consumption" in self.target_sensors:
                 rep.power_consumption = round(max(0.5, truth.power_consumption - self.drift_offset * 1.2), 2)
 
@@ -155,19 +162,24 @@ class AttackEngineService:
         # 3. COORDINATED ATTACK: Multi-sensor falsification with masked plausibility
         # ---------------------------------------------------------------------
         elif self.attack_type == AttackType.COORDINATED:
-            # Attacker fakes a sudden cool weather front to trick automated HVAC
-            # into cutting power while actual building overheats!
-            temp_cut = 7.5 * self.intensity
-            solar_cut = 320.0 * self.intensity
-            load_cut = 10.5 * self.intensity
+            if "humidity" in self.target_sensors or "false_storm" in self.target_sensors:
+                # Coordinated Torrential Deluge & Cloud Cover
+                rep.humidity = round(min(96.0, truth.humidity + 40.0 * self.intensity), 1)
+                rep.solar_radiation = round(max(30.0, 70.0 - 40.0 * self.intensity), 1)
+                rep.temperature = round(max(16.0, truth.temperature - 9.0 * self.intensity), 2)
+                rep.water_flow = round(truth.water_flow + 70.0 * self.intensity, 1)
+            else:
+                # Coordinated Heatwave & False Drought Spoofing:
+                # Attacker injects extreme ambient heat & intense solar radiation,
+                # while deceptively depressing cooling load & cutting irrigation delivery!
+                temp_boost = 13.0 * self.intensity
+                solar_boost = 320.0 * self.intensity
+                load_cut = 11.5 * self.intensity
 
-            rep.temperature = round(truth.temperature - temp_cut, 2)
-            rep.solar_radiation = round(max(0.0, truth.solar_radiation - solar_cut), 1)
-            rep.cooling_load = round(max(1.0, truth.cooling_load - load_cut), 2)
-            # Notice: The attacker cleverly drops temp, solar, and load together,
-            # so each individual sensor appears internally reasonable within 0-50°C!
-            # BUT: Pump speed and physical water flow remain coupled to the real thermal load,
-            # triggering Invariant 01 and Invariant 04!
+                rep.temperature = round(min(45.0, truth.temperature + temp_boost), 2)
+                rep.solar_radiation = round(min(1150.0, truth.solar_radiation + solar_boost), 1)
+                rep.cooling_load = round(max(1.0, truth.cooling_load - load_cut), 2)
+                rep.water_flow = round(max(0.0, truth.water_flow - 50.0 * self.intensity), 1)
 
         # ---------------------------------------------------------------------
         # 4. FREEZE ATTACK: Hold sensor at stale snapshot

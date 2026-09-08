@@ -324,7 +324,17 @@ from app.services.agriculture import agricultural_engine
 )
 async def get_farming_matrix():
     status = orchestrator.get_current_status()
-    matrix = agricultural_engine.evaluate_farming_matrix(status.reported_telemetry)
+    violated = [inv.name for inv in status.defense_result.invariants if inv.violated]
+    compromised = status.defense_result.compromised_sensors or []
+    attack_active = status.attack_state.get("is_active", False) if isinstance(status.attack_state, dict) else getattr(status.attack_state, "is_active", False)
+    is_attack = attack_active or len(violated) > 0
+
+    matrix = agricultural_engine.evaluate_farming_matrix(
+        telemetry=status.reported_telemetry,
+        compromised_sensors=compromised,
+        violated_invariants=violated,
+        is_attack_active=is_attack
+    )
     return {
         "crop_stage": agricultural_engine.crop_stage,
         "activities_count": len(matrix),
@@ -342,7 +352,8 @@ async def get_agricultural_decision():
     # Check if any invariant violated
     violated = [inv.name for inv in status.defense_result.invariants if inv.violated]
     is_causal = len(violated) > 0
-    is_outlier = status.defense_result.threat_level.value in ["ELEVATED", "CRITICAL"]
+    attack_active = status.attack_state.get("is_active", False) if isinstance(status.attack_state, dict) else getattr(status.attack_state, "is_active", False)
+    is_outlier = status.defense_result.threat_level.value in ["ELEVATED", "CRITICAL"] or attack_active
 
     decision = agricultural_engine.compute_3tier_decision(
         telemetry=status.reported_telemetry,

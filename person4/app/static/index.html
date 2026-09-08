@@ -146,11 +146,11 @@
           <div>
             <label class="text-xs text-slate-400 font-medium">Target Scenario</label>
             <select id="target-sensor" class="mt-1 w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg p-2 focus:ring-1 focus:ring-rose-500 focus:outline-none">
-              <option value="coordinated" selected>False Drought (Spoof Soil Dry + Solar)</option>
-              <option value="temperature">Ambient Temperature (°C)</option>
-              <option value="water_flow">Irrigation Water Flow (L/min)</option>
-              <option value="pressure">Hydraulic Pressure (bar)</option>
-              <option value="cooling_load">Cooling Thermal Load (kW)</option>
+              <option value="false_drought" selected>🔥 False Drought (Extreme Heat 42°C + High Solar)</option>
+              <option value="false_storm">⛈️ False Storm (Torrential Deluge 18mm + 95% Hum)</option>
+              <option value="water_flow">💧 Irrigation Flow Decoupling (0 L/min Dry Run)</option>
+              <option value="temperature">🌡️ Thermal Shock FDI (+15°C Ambient)</option>
+              <option value="pressure">⚡ Hydraulic Overpressure (Pipe Burst Risk)</option>
             </select>
           </div>
 
@@ -429,22 +429,28 @@
       tbody.innerHTML = '';
       matrix.forEach(row => {
         let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">🟢 FAVORABLE</span>`;
+        let rowClass = "hover:bg-slate-900/50";
+        let reasonClass = "text-slate-400";
         if (row.status === 'CAUTION') {
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">🟡 CAUTION</span>`;
+          rowClass = "bg-amber-950/20 hover:bg-amber-950/30";
+          reasonClass = "text-amber-200/90";
         } else if (row.status === 'UNFAVORABLE') {
-          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">🔴 UNFAVORABLE</span>`;
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800 pulse-danger">🔴 UNFAVORABLE</span>`;
+          rowClass = "bg-rose-950/30 hover:bg-rose-950/40 border-l-2 border-l-rose-500";
+          reasonClass = "text-rose-200 font-medium";
         }
 
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-900/50";
+        tr.className = rowClass;
         tr.innerHTML = `
-          <td class="py-2 px-3 font-semibold text-slate-200">${row.activity}</td>
-          <td class="py-2 px-3">${statusBadge}</td>
-          <td class="py-2 px-3 text-center text-xs">${row.factors.temp || '🟢'}</td>
-          <td class="py-2 px-3 text-center text-xs">${row.factors.humidity || '🟢'}</td>
-          <td class="py-2 px-3 text-center text-xs">${row.factors.rain || '🟢'}</td>
-          <td class="py-2 px-3 text-center text-xs">${row.factors.solar || '🟢'}</td>
-          <td class="py-2 px-3 text-slate-400 text-[11px] font-sans">${row.reason}</td>
+          <td class="py-2.5 px-3 font-semibold text-slate-200">${row.activity}</td>
+          <td class="py-2.5 px-3">${statusBadge}</td>
+          <td class="py-2.5 px-3 text-center text-xs font-mono">${row.factors.temp || '🟢'}</td>
+          <td class="py-2.5 px-3 text-center text-xs font-mono">${row.factors.humidity || '🟢'}</td>
+          <td class="py-2.5 px-3 text-center text-xs font-mono">${row.factors.rain || '🟢'}</td>
+          <td class="py-2.5 px-3 text-center text-xs font-mono">${row.factors.solar || row.factors.wind || row.factors.flow || '🟢'}</td>
+          <td class="py-2.5 px-3 ${reasonClass} text-[11px] font-sans leading-snug">${row.reason}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -590,8 +596,10 @@
       const intensity = parseFloat(document.getElementById('intensity-slider').value) / 100.0;
 
       let targets = [];
-      if (targetSelect === 'coordinated') {
+      if (targetSelect === 'false_drought' || targetSelect === 'coordinated') {
         targets = ["temperature", "solar_radiation", "cooling_load"];
+      } else if (targetSelect === 'false_storm') {
+        targets = ["humidity", "solar_radiation", "temperature", "false_storm"];
       } else {
         targets = [targetSelect];
       }
