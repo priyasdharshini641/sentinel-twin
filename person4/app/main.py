@@ -42,13 +42,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import os
+from fastapi.responses import RedirectResponse, FileResponse
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
 # Mount API routes
 app.include_router(api_router)
 
 
 @app.get("/", include_in_schema=False)
-async def root():
-    """Redirect root path to interactive Swagger API documentation."""
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard():
+    """Serve the Cyber-Physical Reality Dashboard."""
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return RedirectResponse(url="/docs")
 
 
