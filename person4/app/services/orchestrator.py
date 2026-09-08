@@ -51,6 +51,8 @@ class Orchestrator:
         # Initialize baseline state immediately
         self._last_snapshot: Optional[SystemStatusResponse] = None
         self._tick(dt=0.5)
+        self._tick(dt=0.5)
+
 
     def _determine_system_mode(self, threat: ThreatLevel) -> SystemMode:
         if self.p2.is_active:
@@ -168,10 +170,14 @@ class Orchestrator:
         """Reset all plant simulation, red team, and sustainability metrics."""
         self.p1.reset()
         self.p2.reset()
+        self.p3.reset()
         self.sustainability.reset()
         self.history.clear()
         self.tick_index = 0
-        self._tick(dt=0.1)
+        self._tick(dt=0.5)
+        self._tick(dt=0.5)
+
+
         return {
             "status": "SYSTEM_RESET",
             "message": "Physical digital twin, red team vectors, and sustainability meters reset to nominal."

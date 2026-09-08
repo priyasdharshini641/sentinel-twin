@@ -6,8 +6,10 @@ or simulation metadata.
 """
 
 from collections import deque
+from datetime import datetime
 import math
 from typing import Any, Dict, List, Optional, Sequence
+
 
 
 class CausalEngine:
@@ -90,7 +92,7 @@ class CausalEngine:
             "min_active_speed": 1.0,               # Calibration threshold for stationary vs rotating pump
             "min_active_flow": 0.05,               # Calibration threshold for zero vs active flow
             "min_active_pressure": 0.05,           # Calibration threshold for ambient vs pressurized line
-            "active_speed_threshold": 1000.0,      # Calibratable speed threshold where hydraulic output is expected
+            "active_speed_threshold": 10.0,        # Calibratable speed threshold (in %) where hydraulic output is expected
 
             # Group 2: Thermal Cross-Sensor Relational Tolerances
             "solar_change_tolerance": 50.0,        # Minimum solar change considered significant for consensus
@@ -158,6 +160,18 @@ class CausalEngine:
             val = getattr(telemetry, key, None)
         if val is None:
             return None
+        if key == "timestamp":
+            if isinstance(val, (int, float)):
+                f = float(val)
+                return f if not (math.isnan(f) or math.isinf(f)) else None
+            if isinstance(val, datetime):
+                return val.timestamp()
+            if isinstance(val, str):
+                try:
+                    dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+                    return dt.timestamp()
+                except Exception:
+                    pass
         try:
             f = float(val)
             if math.isnan(f) or math.isinf(f):
@@ -165,6 +179,7 @@ class CausalEngine:
             return f
         except (ValueError, TypeError):
             return None
+
 
     def _extract_status(self, telemetry: Any, key: str) -> Optional[int]:
         """Safely extracts a binary status (1 for ON, 0 for OFF) from telemetry.
@@ -347,6 +362,12 @@ class CausalEngine:
         # Commanded OFF but motor spinning at active speed
         if status == 0 and speed > min_speed:
             return False
+
+        # CASE 3: Pump commanded ON and rotating at active operating speed, but zero flow is reported
+        active_speed_thresh = self.cross_consistency_config.get("active_speed_threshold", 10.0)
+        if status == 1 and speed >= active_speed_thresh and flow <= min_flow:
+            return False
+
 
         # CASE 4: Active hydraulic work reported without power or without operating speed
         if flow > min_flow:

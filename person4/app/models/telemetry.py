@@ -12,27 +12,20 @@ from pydantic import BaseModel, Field
 
 
 # ============================================================================
-# 1. FROZEN TEAM CONTRACT: Telemetry Dataclass
 # ============================================================================
-@dataclass
-class Telemetry:
-    temperature: float          # °C (Ambient Outdoor Temperature)
-    humidity: float             # % (Relative Humidity)
-    solar_radiation: float      # W/m² (Solar Irradiance)
-    cooling_load: float         # kW (Cooling Thermal Load)
-    power_consumption: float    # kW (Total Electrical Draw)
-    water_flow: float           # L/min (Chilled Water / Irrigation Flow)
-    tank_level: float           # % (Buffer / Storage Tank Level)
-    pump_status: str            # 'ON' / 'OFF'
-    pump_speed: float           # % (VFD Pump Speed 0-100%)
-    pressure: float             # bar (Hydraulic Loop Pressure)
-    timestamp: datetime         # ISO-8601 Timestamp
+# 1. FROZEN TEAM CONTRACT: Canonical Telemetry Dataclass
+# ============================================================================
+from pathlib import Path
+import sys
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert dataclass to JSON-serializable dictionary with ISO timestamp."""
-        data = asdict(self)
-        data["timestamp"] = self.timestamp.isoformat()
-        return data
+try:
+    from backend.models.telemetry import Telemetry
+except ImportError:
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from backend.models.telemetry import Telemetry
+
 
 
 # ============================================================================
