@@ -1,7 +1,6 @@
 /**
  * SENTINEL TWIN / SENTINEL SENTRY — API Service Layer
  * Interfaces directly with FastAPI backend on port 8000.
- * Includes graceful offline fallback state to ensure bulletproof UI resilience.
  */
 
 const API_BASE = "http://localhost:8000/api";
@@ -33,20 +32,34 @@ export interface DefenseResult {
   compromised_sensors: string[];
   invariants: InvariantRecord[];
   forensic_deduction: string;
+  healed_telemetry?: Record<string, any>;
+}
+
+export interface SustainabilityImpact {
+  water_wasted_liters: number;
+  energy_wasted_kwh: number;
+  carbon_emissions_kg: number;
+  financial_loss_inr: number;
+  financial_loss_usd: number;
 }
 
 export interface SystemStatus {
+  timestamp: string;
   active_domain: string;
   system_mode: "NOMINAL" | "UNDER_ATTACK" | "DETECTED" | "HEALING";
+  tick_index?: number;
   ground_truth: Record<string, any>;
   reported_telemetry: Record<string, any>;
   defense_result: DefenseResult;
   attack_state: {
     is_active: boolean;
+    active?: boolean;
     attack_type?: string;
-    target_sensors?: string[];
+    type?: string;
     intensity?: number;
+    target_sensors?: string[];
   };
+  sustainability_impact?: SustainabilityImpact;
 }
 
 export interface CausalNode {
@@ -118,22 +131,17 @@ export interface SafeModeResponse {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  try {
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-    return await res.json();
-  } catch (err) {
-    console.warn(`[Sentinel API] Warning calling ${path}:`, err);
-    throw err;
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   }
+  return await res.json();
 }
 
 export const api = {
@@ -185,10 +193,6 @@ export const api = {
 
   async getForensicsDossier(): Promise<ForensicDossier> {
     return request("/forensics/dossier");
-  },
-
-  async getSustainability(): Promise<any> {
-    return request("/sustainability/ticker");
   },
 
   async getTelemetryHistory(limit: number = 60): Promise<any[]> {

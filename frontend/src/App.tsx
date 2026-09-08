@@ -141,8 +141,6 @@ export function App() {
             <Viewport3D
               status={status}
               activeDomain={activeDomain}
-              onLaunchAttack={handleLaunchAttack}
-              onSafeMode={handleEngageSafeMode}
             />
 
             {/* Center Bottom: 3D Brushed Titanium Dial with Micro-LEDs */}

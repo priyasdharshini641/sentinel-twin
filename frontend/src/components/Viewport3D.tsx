@@ -1,475 +1,350 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Maximize2, RotateCcw, Cpu, Layers } from "lucide-react";
+import * as THREE from "three";
+import { Layers, RotateCcw, Radio, Activity } from "lucide-react";
 import { SystemStatus } from "../services/api";
 
 interface Viewport3DProps {
   status: SystemStatus | null;
   activeDomain: string;
-  onLaunchAttack: () => void;
-  onSafeMode: () => void;
 }
 
 export const Viewport3D: React.FC<Viewport3DProps> = ({
   status,
   activeDomain,
-  onLaunchAttack,
-  onSafeMode,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [rotation, setRotation] = useState({ x: 25, y: -40 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const mountRef = useRef<HTMLDivElement | null>(null);
   const [explodedView, setExplodedView] = useState(false);
-  const [rotorAngle, setRotorAngle] = useState(0);
 
-  const isAttacked = status?.attack_state?.is_active || status?.system_mode === "UNDER_ATTACK" || status?.system_mode === "DETECTED";
-  const isHealing = status?.system_mode === "HEALING";
+  const isAttacked =
+    Boolean(status?.attack_state?.is_active) ||
+    status?.system_mode === "UNDER_ATTACK" ||
+    status?.system_mode === "DETECTED";
 
-  // Animation frame loop
   useEffect(() => {
-    let animId: number;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const container = mountRef.current;
+    if (!container) return;
 
-    let localRotor = 0;
+    const width = container.clientWidth;
+    const height = container.clientHeight || 340;
 
-    const render = () => {
-      localRotor += isAttacked ? 0.35 : 0.2;
-      setRotorAngle(localRotor);
+    // 1. Scene & Camera Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040507);
+    scene.fog = new THREE.FogExp2(0x040507, 0.0025);
 
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+    camera.position.set(120, 95, 140);
+    camera.lookAt(0, 0, 0);
 
-      const cx = width / 2;
-      const cy = height / 2 + 10;
+    // 2. WebGL Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    container.innerHTML = "";
+    container.appendChild(renderer.domElement);
 
-      // 3D Perspective Projection Matrix Helper
-      const radX = (rotation.x * Math.PI) / 180;
-      const radY = (rotation.y * Math.PI) / 180;
+    // 3. Lighting (Studio Gruhl / Nothing Rim Lighting)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
 
-      const project = (x: number, y: number, z: number) => {
-        // Rotate around Y
-        let x1 = x * Math.cos(radY) + z * Math.sin(radY);
-        let z1 = -x * Math.sin(radY) + z * Math.cos(radY);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    keyLight.position.set(100, 150, 100);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
 
-        // Rotate around X
-        let y2 = y * Math.cos(radX) - z1 * Math.sin(radX);
-        let z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.9);
+    fillLight.position.set(-100, 50, -100);
+    scene.add(fillLight);
 
-        // Perspective factor
-        const fov = 400;
-        const scale = fov / (fov + z2 + 200);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    rimLight.position.set(0, -50, -100);
+    scene.add(rimLight);
 
-        return {
-          px: cx + x1 * scale,
-          py: cy + y2 * scale,
-          scale,
-          depth: z2,
-        };
-      };
+    // 4. Perspective Isometric Grid Floor (Matching approved mockup)
+    const gridHelper = new THREE.GridHelper(260, 26, 0x374151, 0x1f2937);
+    gridHelper.position.y = -35;
+    scene.add(gridHelper);
 
-      // 1. Draw Perspective Grid Floor (as shown in approved mockup)
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
-      ctx.lineWidth = 1;
-      const gridSize = 180;
-      const gridStep = 30;
-      const groundY = 90;
+    // 5. Dual Trajectory Splines
+    // True Inertial Trajectory (White Line)
+    const trueCurve = new THREE.LineCurve3(
+      new THREE.Vector3(-120, -34, -40),
+      new THREE.Vector3(120, -34, 40)
+    );
+    const trueGeo = new THREE.TubeGeometry(trueCurve, 64, 0.8, 8, false);
+    const trueMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const truePath = new THREE.Mesh(trueGeo, trueMat);
+    scene.add(truePath);
 
-      for (let x = -gridSize; x <= gridSize; x += gridStep) {
-        const p1 = project(x, groundY, -gridSize);
-        const p2 = project(x, groundY, gridSize);
-        ctx.beginPath();
-        ctx.moveTo(p1.px, p1.py);
-        ctx.lineTo(p2.px, p2.py);
-        ctx.stroke();
-      }
+    // Red Spoofed Trajectory (Curved Divergence into restricted airspace)
+    let spoofedPath: THREE.Mesh | null = null;
+    if (isAttacked) {
+      const spoofCurve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(-20, -34, -7),
+        new THREE.Vector3(50, -34, 45),
+        new THREE.Vector3(120, -34, 95)
+      );
+      const spoofGeo = new THREE.TubeGeometry(spoofCurve, 64, 1.2, 8, false);
+      const spoofMat = new THREE.MeshBasicMaterial({ color: 0xd71920 });
+      spoofedPath = new THREE.Mesh(spoofGeo, spoofMat);
+      scene.add(spoofedPath);
+    }
 
-      for (let z = -gridSize; z <= gridSize; z += gridStep) {
-        const p1 = project(-gridSize, groundY, z);
-        const p2 = project(gridSize, groundY, z);
-        ctx.beginPath();
-        ctx.moveTo(p1.px, p1.py);
-        ctx.lineTo(p2.px, p2.py);
-        ctx.stroke();
-      }
+    // 6. Drone Model Assembly Group
+    const droneGroup = new THREE.Group();
+    scene.add(droneGroup);
 
-      // 2. Draw Dual Flight Trajectory Lines (Red Spoofed vs Emerald True Reality)
-      // True Reality Path (Straight stable trajectory)
-      ctx.beginPath();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
-      ctx.lineWidth = 2.5;
-      for (let t = -160; t <= 160; t += 10) {
-        const pt = project(t, groundY - 5, t * 0.4);
-        if (t === -160) ctx.moveTo(pt.px, pt.py);
-        else ctx.lineTo(pt.px, pt.py);
-      }
-      ctx.stroke();
+    // Materials
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: isAttacked ? 0x221215 : 0x181a20,
+      roughness: 0.3,
+      metalness: 0.85,
+    });
+    const carbonMat = new THREE.MeshStandardMaterial({
+      color: 0x111317,
+      roughness: 0.4,
+      metalness: 0.7,
+    });
+    const rotorMat = new THREE.MeshStandardMaterial({
+      color: isAttacked ? 0xd71920 : 0xe5e7eb,
+      roughness: 0.2,
+      metalness: 0.9,
+    });
+    const ledRedMat = new THREE.MeshBasicMaterial({ color: 0xd71920 });
+    const ledGreenMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x111827,
+      roughness: 0.1,
+      metalness: 0.1,
+      transmission: 0.7,
+      transparent: true,
+    });
 
-      // Red Spoofed Trajectory (Diverges dramatically into restricted air/ground when under attack)
-      if (isAttacked || isHealing) {
-        ctx.beginPath();
-        ctx.strokeStyle = "rgba(239, 68, 68, 0.9)";
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([4, 4]);
-        for (let t = -40; t <= 180; t += 10) {
-          const divergence = Math.pow((t + 40) / 70, 2) * 22;
-          const pt = project(t, groundY - 5, t * 0.4 + divergence);
-          if (t === -40) ctx.moveTo(pt.px, pt.py);
-          else ctx.lineTo(pt.px, pt.py);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]); // Reset line dash
-      }
+    // Fuselage Central Body
+    const bodyGeo = new THREE.BoxGeometry(22, 7, 36);
+    const bodyMesh = new THREE.Mesh(bodyGeo, chassisMat);
+    bodyMesh.castShadow = true;
+    droneGroup.add(bodyMesh);
 
-      // 3. Render 3D Model Motif according to active domain
-      if (activeDomain === "autonomous_drone") {
-        renderDrone(ctx, project, localRotor, explodedView, isAttacked);
-      } else if (activeDomain === "smart_water") {
-        renderWaterTank(ctx, project, localRotor, isAttacked);
-      } else if (activeDomain === "precision_agri") {
-        renderAgriPivot(ctx, project, localRotor, isAttacked);
-      } else {
-        renderDataCenter(ctx, project, localRotor, isAttacked);
-      }
+    // Cockpit Canopy
+    const canopyGeo = new THREE.CylinderGeometry(6, 9, 20, 16);
+    canopyGeo.rotateX(Math.PI / 2);
+    const canopyMesh = new THREE.Mesh(canopyGeo, glassMat);
+    canopyMesh.position.set(0, 4.5, 2);
+    droneGroup.add(canopyMesh);
 
-      animId = requestAnimationFrame(render);
+    // Camera Gimbal Pod
+    const gimbalGeo = new THREE.SphereGeometry(4, 16, 16);
+    const gimbalMesh = new THREE.Mesh(gimbalGeo, carbonMat);
+    gimbalMesh.position.set(0, -3.5, 18);
+    droneGroup.add(gimbalMesh);
+
+    // Internal MEMS Sensor (Visible when Exploded View active)
+    const memsGroup = new THREE.Group();
+    const pcbGeo = new THREE.BoxGeometry(10, 1.5, 10);
+    const pcbMat = new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.5 });
+    const pcbMesh = new THREE.Mesh(pcbGeo, pcbMat);
+    memsGroup.add(pcbMesh);
+
+    const chipGeo = new THREE.BoxGeometry(4, 1.8, 4);
+    const chipMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+    const chipMesh = new THREE.Mesh(chipGeo, chipMat);
+    chipMesh.position.y = 1;
+    memsGroup.add(chipMesh);
+    memsGroup.position.set(0, explodedView ? 16 : 0, 0);
+    droneGroup.add(memsGroup);
+
+    // 4 Motor Arms & Rotors
+    const armPositions = [
+      { x: -28, z: -24, rot: Math.PI / 4, led: ledGreenMat },
+      { x: 28, z: -24, rot: -Math.PI / 4, led: ledGreenMat },
+      { x: -28, z: 24, rot: (3 * Math.PI) / 4, led: ledRedMat },
+      { x: 28, z: 24, rot: -(3 * Math.PI) / 4, led: ledRedMat },
+    ];
+
+    const rotorMeshes: THREE.Mesh[] = [];
+
+    armPositions.forEach((pos) => {
+      // Carbon Arm Boom
+      const armGeo = new THREE.CylinderGeometry(1.4, 1.4, 34, 12);
+      armGeo.rotateZ(Math.PI / 2);
+      armGeo.rotateY(pos.rot);
+      const armMesh = new THREE.Mesh(armGeo, carbonMat);
+      armMesh.position.set(pos.x * 0.5, 0, pos.z * 0.5);
+      droneGroup.add(armMesh);
+
+      // Motor Hub
+      const motorGeo = new THREE.CylinderGeometry(3.5, 3.5, 6, 16);
+      const motorMesh = new THREE.Mesh(motorGeo, carbonMat);
+      motorMesh.position.set(pos.x, 1, pos.z);
+      droneGroup.add(motorMesh);
+
+      // Tip LED
+      const ledGeo = new THREE.SphereGeometry(1, 8, 8);
+      const ledMesh = new THREE.Mesh(ledGeo, pos.led);
+      ledMesh.position.set(pos.x * 1.08, -1, pos.z * 1.08);
+      droneGroup.add(ledMesh);
+
+      // Propeller Blades
+      const propGeo = new THREE.BoxGeometry(22, 0.4, 2.2);
+      const propMesh = new THREE.Mesh(propGeo, rotorMat);
+      propMesh.position.set(pos.x, 4.5, pos.z);
+      droneGroup.add(propMesh);
+      rotorMeshes.push(propMesh);
+    });
+
+    // Altitude offset
+    droneGroup.position.y = 8;
+
+    // 7. Interactive Orbit Controls via Mouse Drag
+    let isDragging = false;
+    let prevMousePos = { x: 0, y: 0 };
+    let spherical = { radius: 190, theta: 0.8, phi: 1.05 };
+
+    const updateCameraPos = () => {
+      camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+      camera.position.y = spherical.radius * Math.cos(spherical.phi);
+      camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+      camera.lookAt(0, 0, 0);
+    };
+    updateCameraPos();
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      prevMousePos = { x: e.clientX, y: e.clientY };
     };
 
-    render();
-    return () => cancelAnimationFrame(animId);
-  }, [rotation, explodedView, isAttacked, isHealing, activeDomain]);
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevMousePos.x;
+      const dy = e.clientY - prevMousePos.y;
 
-  // Mouse Orbit Drag Handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
+      spherical.theta -= dx * 0.008;
+      spherical.phi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, spherical.phi - dy * 0.008));
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-    setRotation((prev) => ({
-      x: Math.max(5, Math.min(80, prev.x - dy * 0.4)),
-      y: prev.y + dx * 0.4,
-    }));
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
+      updateCameraPos();
+      prevMousePos = { x: e.clientX, y: e.clientY };
+    };
 
-  const handleMouseUp = () => setIsDragging(false);
+    const onMouseUp = () => (isDragging = false);
+
+    const dom = renderer.domElement;
+    dom.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
+    // 8. Animation Loop
+    let animId: number;
+    let lastTime = performance.now();
+
+    const animate = () => {
+      const now = performance.now();
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      const elapsed = now / 1000;
+
+      // Spin Propeller Rotors
+      const spinSpeed = isAttacked ? 40 : 25;
+      rotorMeshes.forEach((prop, i) => {
+        prop.rotation.y += spinSpeed * delta * (i % 2 === 0 ? 1 : -1);
+      });
+
+      // Gentle natural hovering bobbing physics
+      droneGroup.position.y = 8 + Math.sin(elapsed * 2) * 1.5;
+      droneGroup.rotation.z = Math.sin(elapsed * 1.5) * 0.03;
+      droneGroup.rotation.x = Math.cos(elapsed * 1.2) * 0.02;
+
+      renderer.render(scene, camera);
+      animId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    // Resize handler
+    const onResize = () => {
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight || 340;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      dom.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+    };
+  }, [isAttacked, explodedView, activeDomain]);
 
   return (
-    <div className="relative rounded-2xl glass-panel p-6 overflow-hidden flex flex-col justify-between group transition-all duration-300">
-      {/* Top Floating Telemetry Overlay */}
+    <div className="relative rounded-2xl polycarbonate-panel p-5 overflow-hidden flex flex-col justify-between group">
+      {/* Top Header Row with Nothing Tech Micro-Badges */}
       <div className="flex items-center justify-between z-10">
-        <div className="flex items-center space-x-2">
-          <span className="flex h-2 w-2 relative">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              isAttacked ? "bg-red-400" : "bg-emerald-400"
-            }`} />
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${
-              isAttacked ? "bg-red-500" : "bg-emerald-500"
-            }`} />
-          </span>
-          <span className="font-mono text-xs uppercase tracking-widest text-white/70">
+        <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-1.5 font-dot text-[10px] text-white/80 uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D71920] animate-pulse" />
+            <span>( • LIVE_3D_ISOMETRIC )</span>
+          </div>
+          <span className="text-white/20 font-mono-tech">|</span>
+          <span className="font-mono-tech text-xs text-white/60 uppercase tracking-wider">
             {activeDomain === "autonomous_drone"
-              ? "UAV SENSOR FUSION VIEWPORT"
+              ? "UAV_KINEMATICS // DUAL_TRAJECTORY"
               : activeDomain === "smart_water"
-              ? "MUNICIPAL HYDRAULIC RESERVOIR"
+              ? "HYDRAULIC_GRID // BERNOULLI_FLOW"
               : activeDomain === "precision_agri"
-              ? "PENMAN-MONTEITH CANOPY TWIN"
-              : "GPU THERMAL FLUID CLUSTER"}
+              ? "AGRI_PIVOT // PENMAN_MONTEITH"
+              : "GPU_CLUSTER // 1ST_LAW_THERMO"}
           </span>
         </div>
 
-        {/* Orbit & View Controls */}
+        {/* Viewport Control Buttons */}
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setExplodedView(!explodedView)}
-            className={`px-2.5 py-1 rounded-md text-[10px] font-mono border transition-all flex items-center space-x-1.5 ${
+            className={`px-3 py-1 rounded-full text-[10px] font-mono-tech border transition-all flex items-center space-x-1.5 ${
               explodedView
-                ? "bg-white text-black border-white font-medium shadow-md shadow-white/10"
-                : "text-white/60 border-white/10 hover:text-white hover:bg-white/[0.04]"
+                ? "bg-white text-black border-white font-bold shadow-lg shadow-white/20"
+                : "text-white/60 border-white/10 hover:text-white hover:bg-white/[0.05]"
             }`}
-            title="Toggle Exploded Hardware Sensor View"
           >
             <Layers className="w-3 h-3" />
-            <span>{explodedView ? "CHASSIS ASSEMBLED" : "EXPLODED SENSORS"}</span>
-          </button>
-          
-          <button
-            onClick={() => setRotation({ x: 25, y: -40 })}
-            className="p-1 rounded-md text-white/50 hover:text-white hover:bg-white/10 border border-white/10 transition-colors"
-            title="Reset Camera Angle"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <span>{explodedView ? "ASSEMBLED" : "EXPLODED_MEMS"}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Canvas Viewport (Supports interactive mouse rotate) */}
+      {/* 3D WebGL Canvas Mount Container */}
       <div
-        className="w-full h-[340px] relative cursor-grab active:cursor-grabbing flex items-center justify-center"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <canvas
-          ref={canvasRef}
-          width={640}
-          height={340}
-          className="w-full h-full object-contain"
-        />
+        ref={mountRef}
+        className="w-full h-[330px] relative cursor-grab active:cursor-grabbing rounded-xl overflow-hidden mt-2"
+      />
 
-        {/* Trajectory Legend Badge */}
-        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center space-x-4 text-[10px] font-mono pointer-events-none">
-          <div className="flex items-center space-x-1.5">
-            <span className="w-2.5 h-0.5 bg-white inline-block rounded-full" />
-            <span className="text-white/80">INERTIAL REALITY</span>
+      {/* Bottom Trajectory Legend Strip matching approved mockup */}
+      <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-[11px] font-mono-tech text-white/60">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-0.5 bg-white inline-block rounded-full" />
+            <span className="text-white/90">TRUE INERTIAL ROUTE</span>
           </div>
           {isAttacked && (
-            <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-0.5 bg-red-500 inline-block rounded-full animate-pulse" />
-              <span className="text-red-400 font-semibold">SPOOFED GPS (+25 m/s)</span>
+            <div className="flex items-center space-x-2">
+              <span className="w-3 h-0.5 bg-[#D71920] inline-block rounded-full" />
+              <span className="text-[#D71920] font-bold">SPOOFED GPS (+25 m/s)</span>
             </div>
           )}
         </div>
 
-        {/* Status Prompt */}
-        {isAttacked && (
-          <div className="absolute top-4 right-4 bg-red-950/80 backdrop-blur-md px-3 py-1 rounded-md border border-red-500/40 text-[10px] font-mono text-red-300 flex items-center space-x-1.5 animate-pulse">
-            <span>🚨 SATELLITE MEACONING DETECTED</span>
-          </div>
-        )}
+        <div className="text-[10px] text-white/40 tracking-wider">
+          ORBIT // DRAG TO ROTATE
+        </div>
       </div>
     </div>
   );
 };
-
-// ----------------------------------------------------------------------------
-// 3D MODEL MOTIF DRAWING ROUTINES (Isometric Canvas Math)
-// ----------------------------------------------------------------------------
-
-function renderDrone(
-  ctx: CanvasRenderingContext2D,
-  project: (x: number, y: number, z: number) => { px: number; py: number; scale: number },
-  rotorAngle: number,
-  exploded: boolean,
-  isAttacked: boolean
-) {
-  const explodeOffset = exploded ? 28 : 0;
-  const droneY = -15;
-
-  // 1. Center Fuselage Body (Chrome / Matte Dark Gray)
-  const bodyPoints = [
-    project(-25, droneY - explodeOffset, -15),
-    project(25, droneY - explodeOffset, -15),
-    project(32, droneY - explodeOffset, 0),
-    project(20, droneY - explodeOffset, 20),
-    project(-20, droneY - explodeOffset, 20),
-    project(-32, droneY - explodeOffset, 0),
-  ];
-
-  ctx.beginPath();
-  bodyPoints.forEach((p, idx) => {
-    if (idx === 0) ctx.moveTo(p.px, p.py);
-    else ctx.lineTo(p.px, p.py);
-  });
-  ctx.closePath();
-  ctx.fillStyle = isAttacked ? "#2a1515" : "#1e2128";
-  ctx.fill();
-  ctx.strokeStyle = isAttacked ? "#ef4444" : "#e5e7eb";
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-
-  // Cockpit canopy reflective metallic highlight
-  const canopy = [
-    project(-10, droneY - 6 - explodeOffset, -8),
-    project(10, droneY - 6 - explodeOffset, -8),
-    project(12, droneY - 6 - explodeOffset, 6),
-    project(-12, droneY - 6 - explodeOffset, 6),
-  ];
-  ctx.beginPath();
-  canopy.forEach((p, idx) => {
-    if (idx === 0) ctx.moveTo(p.px, p.py);
-    else ctx.lineTo(p.px, p.py);
-  });
-  ctx.closePath();
-  ctx.fillStyle = isAttacked ? "rgba(239, 68, 68, 0.4)" : "rgba(255, 255, 255, 0.35)";
-  ctx.fill();
-  ctx.stroke();
-
-  // Internal MEMS Sensors (Rendered when exploded view active)
-  if (exploded) {
-    const memsPos = project(0, droneY + 12, 0);
-    ctx.fillStyle = "#10b981";
-    ctx.beginPath();
-    ctx.arc(memsPos.px, memsPos.py, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "9px monospace";
-    ctx.fillText("IMU (Piezoelectric MEMS)", memsPos.px + 8, memsPos.py + 3);
-  }
-
-  // 2. Four Motor Arms
-  const armOffsets = [
-    { x: -55, z: -40 },
-    { x: 55, z: -40 },
-    { x: -55, z: 40 },
-    { x: 55, z: 40 },
-  ];
-
-  armOffsets.forEach((arm) => {
-    const root = project(arm.x * 0.35, droneY, arm.z * 0.35);
-    const end = project(arm.x, droneY, arm.z);
-
-    // Carbon fiber arm strut
-    ctx.beginPath();
-    ctx.moveTo(root.px, root.py);
-    ctx.lineTo(end.px, end.py);
-    ctx.strokeStyle = "#4b5563";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Motor Hub
-    ctx.beginPath();
-    ctx.arc(end.px, end.py, 3.5, 0, Math.PI * 2);
-    ctx.fillStyle = "#9ca3af";
-    ctx.fill();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Spinning Rotor Blades
-    const rLen = 22;
-    const rX = Math.cos(rotorAngle) * rLen;
-    const rZ = Math.sin(rotorAngle) * rLen;
-
-    const b1 = project(arm.x + rX, droneY - 2, arm.z + rZ);
-    const b2 = project(arm.x - rX, droneY - 2, arm.z - rZ);
-
-    ctx.beginPath();
-    ctx.moveTo(b1.px, b1.py);
-    ctx.lineTo(b2.px, b2.py);
-    ctx.strokeStyle = isAttacked ? "rgba(239, 68, 68, 0.85)" : "rgba(255, 255, 255, 0.85)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  });
-}
-
-function renderWaterTank(
-  ctx: CanvasRenderingContext2D,
-  project: (x: number, y: number, z: number) => { px: number; py: number; scale: number },
-  rotorAngle: number,
-  isAttacked: boolean
-) {
-  // Translucent Cylinder Tank
-  const r = 40;
-  const topY = -40;
-  const botY = 40;
-
-  // Water level
-  const waterLevelY = isAttacked ? 10 : -15;
-
-  ctx.strokeStyle = "rgba(6, 182, 212, 0.8)";
-  ctx.fillStyle = isAttacked ? "rgba(239, 68, 68, 0.3)" : "rgba(6, 182, 212, 0.25)";
-
-  ctx.beginPath();
-  for (let a = 0; a <= Math.PI * 2; a += 0.2) {
-    const pt = project(Math.cos(a) * r, waterLevelY, Math.sin(a) * r);
-    if (a === 0) ctx.moveTo(pt.px, pt.py);
-    else ctx.lineTo(pt.px, pt.py);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Draw Tank Glass Outline
-  const pTop = project(0, topY, 0);
-  const pBot = project(0, botY, 0);
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(pTop.px - 35, pTop.py, 70, pBot.py - pTop.py);
-
-  // Pump Turbine
-  const pumpPt = project(60, botY - 5, 0);
-  ctx.fillStyle = "#374151";
-  ctx.beginPath();
-  ctx.arc(pumpPt.px, pumpPt.py, 12, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-}
-
-function renderAgriPivot(
-  ctx: CanvasRenderingContext2D,
-  project: (x: number, y: number, z: number) => { px: number; py: number; scale: number },
-  rotorAngle: number,
-  isAttacked: boolean
-) {
-  // Center Pivot Tower
-  const center = project(0, 30, 0);
-  const top = project(0, -30, 0);
-  ctx.beginPath();
-  ctx.moveTo(center.px, center.py);
-  ctx.lineTo(top.px, top.py);
-  ctx.strokeStyle = "#9ca3af";
-  ctx.lineWidth = 3;
-  ctx.stroke();
-
-  // Pivot Arm Rotating across crop field
-  const armLen = 80;
-  const aX = Math.cos(rotorAngle * 0.1) * armLen;
-  const aZ = Math.sin(rotorAngle * 0.1) * armLen;
-  const armEnd = project(aX, -20, aZ);
-
-  ctx.beginPath();
-  ctx.moveTo(top.px, top.py);
-  ctx.lineTo(armEnd.px, armEnd.py);
-  ctx.strokeStyle = isAttacked ? "#ef4444" : "#10b981";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-}
-
-function renderDataCenter(
-  ctx: CanvasRenderingContext2D,
-  project: (x: number, y: number, z: number) => { px: number; py: number; scale: number },
-  rotorAngle: number,
-  isAttacked: boolean
-) {
-  // Server Rack Isometric Cuboid
-  const rackH = 70;
-  const rackW = 45;
-  const rackD = 40;
-
-  const pts = [
-    project(-rackW, -rackH, -rackD),
-    project(rackW, -rackH, -rackD),
-    project(rackW, rackH, -rackD),
-    project(-rackW, rackH, -rackD),
-  ];
-
-  ctx.beginPath();
-  pts.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.px, p.py) : ctx.lineTo(p.px, p.py)));
-  ctx.closePath();
-  ctx.fillStyle = isAttacked ? "#351515" : "#131720";
-  ctx.fill();
-  ctx.strokeStyle = isAttacked ? "#ef4444" : "rgba(255, 255, 255, 0.25)";
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-
-  // Glowing Server Blade LEDs
-  for (let i = -50; i < 50; i += 12) {
-    const p1 = project(-35, i, -rackD - 1);
-    const p2 = project(35, i, -rackD - 1);
-    ctx.beginPath();
-    ctx.moveTo(p1.px, p1.py);
-    ctx.lineTo(p2.px, p2.py);
-    ctx.strokeStyle = isAttacked ? "#ef4444" : "#06b6d4";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-}

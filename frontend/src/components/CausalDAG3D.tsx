@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Activity, ShieldAlert, Sparkles, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { ShieldAlert } from "lucide-react";
 import { CausalGraphResponse } from "../services/api";
 
 interface CausalDAG3DProps {
@@ -9,265 +10,218 @@ interface CausalDAG3DProps {
 }
 
 export const CausalDAG3D: React.FC<CausalDAG3DProps> = ({
-  graph,
   isAttacked,
-  activeDomain,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [rotation, setRotation] = useState({ x: 20, y: 15 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-
-  // Fallback nodes if API is loading
-  const nodes = graph?.nodes?.length
-    ? graph.nodes
-    : [
-        { id: "gps_speed", label: "GPS Ground Speed", value: "39.6 m/s", type: "radio_sensor" },
-        { id: "imu_accel", label: "IMU Accelerometer", value: "0.04 m/s²", type: "inertial_sensor" },
-        { id: "baro_alt", label: "Barometric Altimeter", value: "120.0 m", type: "pressure_sensor" },
-        { id: "gps_alt", label: "GPS Radio Altitude", value: "102.1 m", type: "radio_sensor" },
-        { id: "rotor_rpm", label: "Rotor Thrust RPM", value: "6810 RPM", type: "actuator" },
-        { id: "battery_current", label: "Battery Current", value: "24.6 A", type: "electrical" },
-      ];
-
-  // 3D Positions for the nodes arranged in an organic molecular cluster (as in the approved image)
-  const nodePositions: Record<string, { x: number; y: number; z: number }> = {
-    gps_speed: { x: 0, y: -80, z: 20 },
-    imu_accel: { x: -65, y: -10, z: -30 },
-    baro_alt: { x: 65, y: -20, z: -20 },
-    gps_alt: { x: 50, y: 60, z: 40 },
-    rotor_rpm: { x: -50, y: 70, z: 10 },
-    battery_current: { x: 0, y: 110, z: -40 },
-  };
-
-  const edges = [
-    { from: "imu_accel", to: "gps_speed", law: "Newton's 2nd Law (F=m·a)", fractured: isAttacked },
-    { from: "baro_alt", to: "gps_alt", law: "Barometric Lapse Rate", fractured: isAttacked },
-    { from: "rotor_rpm", to: "gps_speed", law: "Rotor Aerodynamic Thrust", fractured: isAttacked },
-    { from: "battery_current", to: "rotor_rpm", law: "Electromotive Power", fractured: false },
-    { from: "imu_accel", to: "rotor_rpm", law: "Body Frame Torque Coupling", fractured: false },
-  ];
+  const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    let animId: number;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const container = mountRef.current;
+    if (!container) return;
 
-    let time = 0;
+    const width = container.clientWidth;
+    const height = container.clientHeight || 440;
 
-    const render = () => {
-      time += 0.03;
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
+    // 1. Scene & Camera
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040507);
 
-      const cx = width / 2;
-      const cy = height / 2;
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 140);
 
-      // 3D Perspective Projection Matrix
-      const radX = (rotation.x * Math.PI) / 180;
-      const radY = (rotation.y * Math.PI) / 180;
+    // 2. Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.innerHTML = "";
+    container.appendChild(renderer.domElement);
 
-      const project = (x: number, y: number, z: number) => {
-        let x1 = x * Math.cos(radY) + z * Math.sin(radY);
-        let z1 = -x * Math.sin(radY) + z * Math.cos(radY);
+    // 3. Studio Lighting for Frosted Glass / Chrome Balls (Matching approved mockup)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambientLight);
 
-        let y2 = y * Math.cos(radX) - z1 * Math.sin(radX);
-        let z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight1.position.set(80, 100, 100);
+    scene.add(dirLight1);
 
-        const fov = 350;
-        const scale = fov / (fov + z2 + 200);
+    const dirLight2 = new THREE.DirectionalLight(0x93c5fd, 1.2);
+    dirLight2.position.set(-80, -60, -80);
+    scene.add(dirLight2);
 
-        return {
-          px: cx + x1 * scale,
-          py: cy + y2 * scale,
-          scale,
-          depth: z2,
-        };
-      };
+    // 4. Molecular Nodes & Positions (As seen in the approved mockup)
+    const nodeCoords = [
+      { id: "gps_speed", x: -20, y: 35, z: 10, label: "GPS SPEED" },
+      { id: "imu_accel", x: 25, y: 40, z: -15, label: "IMU ACCEL" },
+      { id: "baro_alt", x: -35, y: -5, z: -20, label: "BARO ALT" },
+      { id: "gps_alt", x: 15, y: 0, z: 25, label: "GPS ALT" },
+      { id: "rotor_rpm", x: -25, y: -45, z: 15, label: "ROTOR RPM" },
+      { id: "battery", x: 30, y: -40, z: -10, label: "POWER" },
+    ];
 
-      // 1. Draw Connecting Physical Bond Edges
-      edges.forEach((edge) => {
-        const p1 = nodePositions[edge.from] || { x: -30, y: -20, z: 0 };
-        const p2 = nodePositions[edge.to] || { x: 30, y: 20, z: 0 };
+    const graphGroup = new THREE.Group();
+    scene.add(graphGroup);
 
-        const proj1 = project(p1.x, p1.y, p1.z);
-        const proj2 = project(p2.x, p2.y, p2.z);
+    // Chrome / Frosted Glass Material for the Spheres
+    const sphereMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      roughness: 0.15,
+      metalness: 0.85,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+      reflectivity: 0.9,
+    });
 
-        ctx.beginPath();
-        ctx.moveTo(proj1.px, proj1.py);
+    const sphereAlertMat = new THREE.MeshPhysicalMaterial({
+      color: 0xd71920,
+      roughness: 0.2,
+      metalness: 0.8,
+      emissive: 0x990000,
+      emissiveIntensity: 0.4,
+    });
 
-        if (edge.fractured) {
-          // Lightning crack / jagged fracture line when invariant is broken
-          const midX = (proj1.px + proj2.px) / 2 + Math.sin(time * 15) * 6;
-          const midY = (proj1.py + proj2.py) / 2 + Math.cos(time * 15) * 6;
-          ctx.lineTo(midX, midY);
-          ctx.lineTo(proj2.px, proj2.py);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.9)";
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
+    const sphereGeo = new THREE.SphereGeometry(7, 32, 32);
 
-          // Fracture Spark Glow
-          ctx.fillStyle = "rgba(239, 68, 68, 0.3)";
-          ctx.beginPath();
-          ctx.arc(midX, midY, 8 + Math.sin(time * 20) * 3, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          // Smooth tensile rod with traveling laser energy pulse
-          ctx.lineTo(proj2.px, proj2.py);
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-          ctx.lineWidth = 1.6;
-          ctx.stroke();
+    nodeCoords.forEach((node) => {
+      const isCompromised = isAttacked && (node.id === "gps_speed" || node.id === "gps_alt");
+      const mesh = new THREE.Mesh(sphereGeo, isCompromised ? sphereAlertMat : sphereMat);
+      mesh.position.set(node.x, node.y, node.z);
+      graphGroup.add(mesh);
+    });
 
-          // Traveling conservation pulse particle
-          const pulseT = (time % 1.5) / 1.5;
-          const pulseX = proj1.px + (proj2.px - proj1.px) * pulseT;
-          const pulseY = proj1.py + (proj2.py - proj1.py) * pulseT;
+    // Connecting Bonds (Fine white tensile cylinders)
+    const bonds = [
+      { from: 0, to: 1, fractured: isAttacked }, // GPS Speed -> IMU Accel (Newtonian Kinematics F=ma)
+      { from: 2, to: 3, fractured: isAttacked }, // Baro Alt -> GPS Alt
+      { from: 0, to: 4, fractured: isAttacked }, // GPS Speed -> Rotor RPM
+      { from: 4, to: 5, fractured: false },      // Rotor RPM -> Power
+      { from: 1, to: 3, fractured: false },
+      { from: 2, to: 4, fractured: false },
+      { from: 1, to: 5, fractured: false },
+    ];
 
-          ctx.fillStyle = "#ffffff";
-          ctx.beginPath();
-          ctx.arc(pulseX, pulseY, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
+    bonds.forEach((bond) => {
+      const p1 = new THREE.Vector3(nodeCoords[bond.from].x, nodeCoords[bond.from].y, nodeCoords[bond.from].z);
+      const p2 = new THREE.Vector3(nodeCoords[bond.to].x, nodeCoords[bond.to].y, nodeCoords[bond.to].z);
+      const dist = p1.distanceTo(p2);
+
+      const bondGeo = new THREE.CylinderGeometry(0.6, 0.6, dist, 12);
+      bondGeo.rotateX(Math.PI / 2);
+
+      const bondMat = new THREE.MeshBasicMaterial({
+        color: bond.fractured ? 0xd71920 : 0xffffff,
+        transparent: true,
+        opacity: bond.fractured ? 0.95 : 0.4,
       });
 
-      // 2. Draw 3D Frosted Glass / Chrome Spheres (matching the approved mockup)
-      const sortedNodes = nodes
-        .map((n) => {
-          const pos = nodePositions[n.id] || { x: 0, y: 0, z: 0 };
-          const p = project(pos.x, pos.y, pos.z);
-          return { ...n, ...p };
-        })
-        .sort((a, b) => b.depth - a.depth);
+      const bondMesh = new THREE.Mesh(bondGeo, bondMat);
+      bondMesh.position.copy(p1).lerp(p2, 0.5);
+      bondMesh.lookAt(p2);
+      graphGroup.add(bondMesh);
+    });
 
-      sortedNodes.forEach((node) => {
-        const radius = 18 * node.scale;
+    // 5. Mouse Drag Orbit Handlers
+    let isDragging = false;
+    let prevMousePos = { x: 0, y: 0 };
 
-        // Outer glow
-        const glowGrad = ctx.createRadialGradient(
-          node.px - radius * 0.3,
-          node.py - radius * 0.3,
-          radius * 0.1,
-          node.px,
-          node.py,
-          radius * 1.5
-        );
-
-        if (isAttacked && (node.id === "gps_speed" || node.id === "gps_alt")) {
-          glowGrad.addColorStop(0, "rgba(254, 202, 202, 0.9)");
-          glowGrad.addColorStop(0.5, "rgba(239, 68, 68, 0.7)");
-          glowGrad.addColorStop(1, "rgba(185, 28, 28, 0.1)");
-        } else {
-          // Frosted chrome / white sheen as shown in user's image
-          glowGrad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-          glowGrad.addColorStop(0.4, "rgba(209, 213, 219, 0.6)");
-          glowGrad.addColorStop(1, "rgba(107, 114, 128, 0.15)");
-        }
-
-        ctx.fillStyle = glowGrad;
-        ctx.beginPath();
-        ctx.arc(node.px, node.py, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // White specular rim highlight
-        ctx.strokeStyle = isAttacked && (node.id === "gps_speed" || node.id === "gps_alt")
-          ? "#ef4444"
-          : "rgba(255, 255, 255, 0.85)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Node Label
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(node.label, node.px, node.py + radius + 12);
-      });
-
-      animId = requestAnimationFrame(render);
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      prevMousePos = { x: e.clientX, y: e.clientY };
     };
 
-    render();
-    return () => cancelAnimationFrame(animId);
-  }, [rotation, isAttacked, nodes]);
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevMousePos.x;
+      const dy = e.clientY - prevMousePos.y;
 
-  // Drag Orbit Handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
+      graphGroup.rotation.y += dx * 0.01;
+      graphGroup.rotation.x += dy * 0.01;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-    setRotation((prev) => ({
-      x: Math.max(-40, Math.min(60, prev.x - dy * 0.4)),
-      y: prev.y + dx * 0.4,
-    }));
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
+      prevMousePos = { x: e.clientX, y: e.clientY };
+    };
 
-  const handleMouseUp = () => setIsDragging(false);
+    const onMouseUp = () => (isDragging = false);
+
+    const dom = renderer.domElement;
+    dom.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
+    // 6. Gentle Ambient Float Loop
+    let animId: number;
+    const animate = () => {
+      if (!isDragging) {
+        graphGroup.rotation.y += 0.003;
+      }
+      renderer.render(scene, camera);
+      animId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    const onResize = () => {
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight || 440;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      dom.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+    };
+  }, [isAttacked]);
 
   return (
-    <div className="h-full rounded-2xl glass-panel p-6 flex flex-col justify-between group transition-all duration-300 relative overflow-hidden">
+    <div className="h-full rounded-2xl polycarbonate-panel p-6 flex flex-col justify-between group relative overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between z-10">
         <div>
-          <span className="text-[10px] tracking-widest text-white/50 font-mono uppercase">
-            PHYSICAL INVARIANT DAG
+          <span className="font-dot text-[10px] text-white/50 uppercase tracking-widest block">
+            INVARIANT_DAG // 3D
           </span>
-          <h3 className="text-xl font-normal text-white tracking-tight mt-0.5">
+          <h3 className="text-xl font-light text-white tracking-tight font-editorial mt-0.5">
             Causal Reality Graph
           </h3>
         </div>
 
         <span
-          className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono-tech border ${
             isAttacked
-              ? "bg-red-950/80 text-red-400 border-red-500/40 animate-pulse"
-              : "bg-emerald-950/80 text-emerald-400 border-emerald-500/40"
+              ? "bg-[#D71920]/20 text-[#D71920] border-[#D71920]/40 animate-pulse font-bold"
+              : "bg-white/[0.05] text-white/80 border-white/20"
           }`}
         >
           {isAttacked ? "FRACTURED" : "NOMINAL"}
         </span>
       </div>
 
-      {/* 3D Molecular Graph Canvas */}
+      {/* 3D WebGL Molecular Structure Canvas */}
       <div
-        className="w-full flex-1 relative cursor-grab active:cursor-grabbing flex items-center justify-center min-h-[380px]"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <canvas
-          ref={canvasRef}
-          width={360}
-          height={420}
-          className="w-full h-full object-contain"
-        />
+        ref={mountRef}
+        className="w-full flex-1 relative cursor-grab active:cursor-grabbing min-h-[360px]"
+      />
 
-        {/* Floating Invariant Fracture Toast */}
-        {isAttacked && (
-          <div className="absolute bottom-4 inset-x-4 bg-red-950/90 border border-red-500/40 rounded-xl p-3 backdrop-blur-md text-[11px] font-mono text-red-200 shadow-xl animate-fade-in">
-            <div className="flex items-center space-x-2 text-red-400 font-semibold mb-1">
-              <ShieldAlert className="w-4 h-4" />
-              <span>BOND FRACTURE: F = m·a</span>
-            </div>
-            <p className="text-white/70 text-[10px]">
-              GPS velocity delta (39.6 m/s) contradicts piezoelectric IMU accelerometer (0.04 m/s²).
-            </p>
+      {/* Invariant Breach Toast */}
+      {isAttacked && (
+        <div className="p-3.5 rounded-xl bg-[#D71920]/15 border border-[#D71920]/40 text-xs font-mono-tech text-white shadow-xl mb-2 animate-fade-in">
+          <div className="flex items-center space-x-2 text-[#D71920] font-bold mb-1">
+            <ShieldAlert className="w-4 h-4" />
+            <span>FRACTURED: NEWTON'S 2ND LAW</span>
           </div>
-        )}
-      </div>
+          <p className="text-white/70 text-[11px] leading-tight font-sans">
+            GPS speed +25 m/s delta has 0.04 m/s² IMU reaction. Radio meaconing spoof detected.
+          </p>
+        </div>
+      )}
 
       {/* Footer Info */}
-      <div className="border-t border-white/[0.08] pt-3 flex items-center justify-between text-[11px] font-mono text-white/50">
-        <span>INTERACTIVE ORBIT (DRAG)</span>
+      <div className="border-t border-white/[0.08] pt-3 flex items-center justify-between text-[11px] font-mono-tech text-white/50">
+        <span>INTERACTIVE 3D (DRAG)</span>
         <span className="text-white/80">6 PHYSICAL BONDS</span>
       </div>
     </div>

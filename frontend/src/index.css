@@ -1,23 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Silkscreen&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --bg-base: #060709;
-    --bg-card: rgba(14, 16, 22, 0.75);
-    --border-hairline: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.2);
-    --text-primary: #FFFFFF;
-    --text-muted: #8E929E;
-    --accent-emerald: #10B981;
-    --accent-amber: #F59E0B;
-    --accent-crimson: #EF4444;
-    --accent-cyan: #06B6D4;
+    --bg-black: #000000;
+    --bg-surface: #0a0c10;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --border-active: rgba(255, 255, 255, 0.3);
+    --nothing-red: #D71920;
+    --glyph-white: #FFFFFF;
   }
 
   body {
-    background-color: #060709;
-    color: #F3F4F6;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #000000;
+    color: #FFFFFF;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow-x: hidden;
     margin: 0;
     padding: 0;
@@ -27,74 +24,108 @@
   }
 }
 
-/* Custom Nothing / Studio Gruhl Grid Background */
-.bg-grid-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* Nothing Tech Typography Utilities */
+.font-dot {
+  font-family: 'Silkscreen', monospace;
 }
 
-.bg-dot-matrix {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 0);
-  background-size: 8px 8px;
+.font-mono-tech {
+  font-family: 'Share Tech Mono', monospace;
 }
 
-/* Hairline Glassmorphism */
-.glass-panel {
-  background: rgba(13, 15, 20, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.font-editorial {
+  font-family: 'Space Grotesk', sans-serif;
 }
 
-.glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+/* Nothing Glyph Interface Glowing Accent */
+.glyph-border {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-/* Brushed Titanium Dial Knurling & Sheen */
-.brushed-metal {
+.glyph-border-alert {
+  border: 1px solid rgba(215, 25, 32, 0.4);
+  box-shadow: 0 0 30px rgba(215, 25, 32, 0.15), inset 0 1px 0 rgba(215, 25, 32, 0.3);
+}
+
+/* Transparent Polycarbonate Glass (Nothing Ear / Phone chassis aesthetic) */
+.polycarbonate-panel {
+  background: radial-gradient(circle at 50% 0%, rgba(26, 29, 36, 0.6) 0%, rgba(10, 12, 16, 0.85) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255, 255, 255, 0.18);
+}
+
+.polycarbonate-panel:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* Subtle PCB bus traces & dot grid */
+.bg-nothing-grid {
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 16px 16px, 64px 64px, 64px 64px;
+}
+
+/* High Precision Titanium Brushed Texture */
+.titanium-finish {
   background: radial-gradient(
-    circle at 35% 35%,
-    #e8eaed 0%,
-    #a6abb5 25%,
-    #5f6368 50%,
-    #80868b 75%,
-    #3c4043 100%
+    circle at 38% 38%,
+    #f3f4f6 0%,
+    #d1d5db 20%,
+    #9ca3af 40%,
+    #4b5563 70%,
+    #1f2937 100%
   );
-  box-shadow: 
-    0 10px 25px rgba(0,0,0,0.8),
-    inset 0 2px 3px rgba(255,255,255,0.6),
-    inset 0 -3px 6px rgba(0,0,0,0.9);
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.9),
+    0 2px 4px rgba(255, 255, 255, 0.4) inset,
+    0 -4px 8px rgba(0, 0, 0, 0.8) inset;
 }
 
-.dial-face {
+.titanium-dial-face {
   background: conic-gradient(
     from 0deg,
-    #5f6368 0deg,
-    #9aa0a6 45deg,
-    #3c4043 90deg,
-    #bdc1c6 135deg,
-    #5f6368 180deg,
-    #9aa0a6 225deg,
-    #3c4043 270deg,
-    #bdc1c6 315deg,
-    #5f6368 360deg
+    #4b5563 0deg,
+    #9ca3af 45deg,
+    #374151 90deg,
+    #e5e7eb 135deg,
+    #4b5563 180deg,
+    #9ca3af 225deg,
+    #374151 270deg,
+    #e5e7eb 315deg,
+    #4b5563 360deg
   );
+}
+
+/* Micro LED glow */
+.led-glow-red {
+  box-shadow: 0 0 10px #d71920, 0 0 20px rgba(215, 25, 32, 0.6);
+}
+
+.led-glow-white {
+  box-shadow: 0 0 8px #ffffff, 0 0 16px rgba(255, 255, 255, 0.7);
+}
+
+.led-glow-cyan {
+  box-shadow: 0 0 8px #00f0ff, 0 0 16px rgba(0, 240, 255, 0.6);
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #060709;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
 }

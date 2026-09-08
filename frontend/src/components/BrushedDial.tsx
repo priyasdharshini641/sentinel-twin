@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Zap, ShieldCheck, AlertTriangle, Play, Square } from "lucide-react";
+import { Zap, ShieldCheck, Square } from "lucide-react";
 
 interface BrushedDialProps {
   intensity: number;
@@ -22,7 +22,6 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [angle, setAngle] = useState(intensity * 270 - 135); // -135deg to +135deg
 
-  // Sync angle if intensity changes from parent
   useEffect(() => {
     setAngle(intensity * 270 - 135);
   }, [intensity]);
@@ -39,11 +38,9 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
     let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
     if (deg > 180) deg -= 360;
 
-    // Clamp between -135 and +135
     const clampedDeg = Math.max(-135, Math.min(135, deg));
     setAngle(clampedDeg);
 
-    // Map to 0.0 - 1.0 intensity
     const normalized = (clampedDeg + 135) / 270;
     onIntensityChange(parseFloat(normalized.toFixed(2)));
   };
@@ -61,8 +58,8 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
     };
   }, [isDragging]);
 
-  // Generate radial micro-LED ticks (40 ticks from -135deg to +135deg)
-  const totalTicks = 36;
+  // Generate 42 radial micro-LED ticks encircling the dial from -135deg to +135deg
+  const totalTicks = 38;
   const ticks = Array.from({ length: totalTicks }).map((_, idx) => {
     const tickAngle = -135 + (idx / (totalTicks - 1)) * 270;
     const isLit = tickAngle <= angle;
@@ -70,30 +67,30 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
   });
 
   return (
-    <div className="rounded-2xl glass-panel p-6 flex flex-col justify-between group transition-all duration-300">
-      {/* Title block matching the approved mockup */}
+    <div className="rounded-2xl polycarbonate-panel p-6 flex flex-col justify-between group transition-all duration-300">
+      {/* Title block matching the exact approved mockup text */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-xl md:text-2xl font-normal text-white tracking-tight">
+          <h3 className="text-2xl font-light text-white tracking-tight font-editorial">
             3D brushed titanium dial
           </h3>
-          <p className="text-xs text-white/50 tracking-wider font-mono mt-1">
-            Micro-LED tick marks • Adversarial Drift Injector
+          <p className="text-xs text-white/50 tracking-wider font-mono-tech mt-0.5">
+            Micro-LED tick marks
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="font-mono text-xs px-2 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/80">
+          <span className="font-dot text-[11px] px-2.5 py-1 rounded bg-white/[0.06] border border-white/10 text-white/90">
             {(intensity * 100).toFixed(0)}% GAIN
           </span>
         </div>
       </div>
 
-      {/* Main Dial and Controls Container */}
-      <div className="flex items-center justify-between mt-6">
-        {/* The Brushed Titanium Dial Widget */}
-        <div className="relative w-36 h-36 flex items-center justify-center select-none cursor-grab active:cursor-grabbing">
-          {/* Outer Radial Micro-LED Ticks */}
+      {/* Main Interactive Dial and Controls Container */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-6">
+        {/* The Photorealistic Brushed Titanium Dial Widget */}
+        <div className="relative w-44 h-44 flex items-center justify-center select-none cursor-grab active:cursor-grabbing">
+          {/* Radial Micro-LED Ticks */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {ticks.map((t, idx) => (
               <div
@@ -105,9 +102,9 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
                   className={`w-1 rounded-full transition-all duration-150 ${
                     t.isLit
                       ? isAttacking
-                        ? "h-2.5 bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.9)]"
-                        : "h-2.5 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                      : "h-1 bg-white/20"
+                        ? "h-3 bg-[#D71920] shadow-[0_0_10px_#D71920]"
+                        : "h-3 bg-white shadow-[0_0_8px_#ffffff]"
+                      : "h-1.5 bg-white/20"
                   }`}
                 />
                 <div className="w-1 h-1 opacity-0" />
@@ -115,54 +112,57 @@ export const BrushedDial: React.FC<BrushedDialProps> = ({
             ))}
           </div>
 
-          {/* Rotary Dial Body (Brushed Titanium finish) */}
+          {/* Titanium Dial Knob (With Realistic Anisotropic Sheen & Knurled Bevel) */}
           <div
             ref={dialRef}
             onPointerDown={() => setIsDragging(true)}
-            className="w-24 h-24 rounded-full brushed-metal relative flex items-center justify-center shadow-2xl transition-transform active:scale-95"
+            className="w-28 h-28 rounded-full titanium-finish relative flex items-center justify-center shadow-2xl transition-transform active:scale-98"
             style={{ transform: `rotate(${angle}deg)` }}
           >
-            {/* Dial Face Texture */}
-            <div className="w-20 h-20 rounded-full dial-face relative flex items-center justify-center shadow-inner">
-              {/* Center Machined Bevel */}
-              <div className="w-12 h-12 rounded-full bg-gradient-to-b from-[#2a2d34] to-[#16181d] border border-white/20 shadow-md flex items-center justify-center">
-                <span className="text-[10px] font-mono text-white/50 tracking-tighter">
-                  {(intensity * 100).toFixed(0)}
-                </span>
-              </div>
+            {/* Concentric Knurling Outer Rim */}
+            <div className="w-26 h-26 rounded-full border border-white/30 flex items-center justify-center">
+              {/* Dial Face Anisotropic Reflected Texture */}
+              <div className="w-24 h-24 rounded-full titanium-dial-face relative flex items-center justify-center shadow-inner">
+                {/* Center Machined Recessed Hub */}
+                <div className="w-14 h-14 rounded-full bg-gradient-to-b from-[#2b2e36] to-[#121418] border border-white/25 shadow-md flex items-center justify-center">
+                  <span className="font-dot text-[10px] text-white/60 tracking-tighter">
+                    {(intensity * 50).toFixed(0)}m/s
+                  </span>
+                </div>
 
-              {/* Indicator Notch / Slit Line */}
-              <div className="absolute top-1.5 w-1 h-3.5 bg-white rounded-full shadow-[0_0_4px_#ffffff]" />
+                {/* White Indicator Notch / Laser Slit */}
+                <div className="absolute top-1.5 w-1 h-4 bg-white rounded-full shadow-[0_0_6px_#ffffff]" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tactical Execution Actions */}
-        <div className="flex flex-col space-y-3 flex-1 pl-6">
+        {/* Tactical Execution Action Buttons */}
+        <div className="flex flex-col space-y-3 flex-1 w-full sm:w-auto">
           {!isAttacking ? (
             <button
               onClick={onTriggerAttack}
-              className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-red-500 hover:text-white border border-white/20 hover:border-red-400 transition-all duration-300 text-xs font-mono font-medium tracking-wider flex items-center justify-center space-x-2 shadow-lg group"
+              className="w-full py-3 px-4 rounded-full bg-white text-black hover:bg-neutral-200 transition-all duration-300 text-xs font-mono-tech font-bold tracking-wider flex items-center justify-center space-x-2 shadow-xl shadow-white/10 active:scale-95"
             >
-              <Zap className="w-3.5 h-3.5 text-red-400 group-hover:text-white" />
+              <Zap className="w-4 h-4 text-[#D71920]" />
               <span>INJECT GPS SPOOFING (+25 m/s)</span>
             </button>
           ) : (
             <button
               onClick={onStopAttack}
-              className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white border border-red-500 transition-all duration-300 text-xs font-mono font-medium tracking-wider flex items-center justify-center space-x-2 shadow-lg shadow-red-600/30 animate-pulse"
+              className="w-full py-3 px-4 rounded-full bg-[#D71920] hover:bg-red-700 text-white transition-all duration-300 text-xs font-mono-tech font-bold tracking-wider flex items-center justify-center space-x-2 shadow-xl shadow-red-600/30 animate-pulse"
             >
-              <Square className="w-3.5 h-3.5" />
-              <span>HALT ADVERSARIAL ATTACK</span>
+              <Square className="w-4 h-4" />
+              <span>HALT ADVERSARIAL PERTURBATION</span>
             </button>
           )}
 
           <button
             onClick={onEngageSafeMode}
-            className="w-full py-2.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 hover:text-black border border-emerald-500/30 text-emerald-400 hover:border-emerald-400 transition-all duration-300 text-xs font-mono font-medium tracking-wider flex items-center justify-center space-x-2"
+            className="w-full py-3 px-4 rounded-full bg-white/[0.05] hover:bg-white/[0.12] border border-white/20 text-white transition-all duration-300 text-xs font-mono-tech tracking-wider flex items-center justify-center space-x-2"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>ENGAGE INERTIAL SELF-HEALING</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>ENGAGE INERTIAL DEAD-RECKONING</span>
           </button>
         </div>
       </div>
