@@ -1,134 +1,247 @@
 # SENTINEL TWIN — Zero-Trust Cyber-Physical Reality Verification
-> **Problem Statement 18: SensorSentry — Cyber-Physical Sensor Spoofing Detection & Invariant Sensor Fusion**  
-> *Autonomous Drone Fleets • Smart Municipal Water • Precision Agriculture • Cloud Hyperscale AI Data Centers*
+
+> **SensorSentry: Cyber-Physical Sensor Spoofing Detection & Invariant Sensor Fusion**
+
+SENTINEL TWIN is a **cyber-physical security platform** that uses a digital twin to simulate automated infrastructure, launch sensor spoofing attacks, and verify whether the overall physical reality created by the telemetry makes sense.
+
+Instead of only asking:
+
+> **"Is this sensor value abnormal?"**
+
+SENTINEL TWIN asks:
+
+> **"Does the reality created by all these sensor values make physical sense?"**
 
 ---
 
-## 🏛️ Cooperative System Architecture (P1 ➔ P2 ➔ P3 ➔ P4)
+## 🚀 What It Does
 
-Sentinel Twin is engineered with a strict decoupled, 4-tier cooperative architecture where every teammate's module executes seamlessly in a closed-loop cyber-physical verification pipeline:
+The platform creates a simulated physical environment, generates realistic telemetry, introduces cyberattacks such as sensor spoofing and gradual drift, and analyzes the manipulated data using **statistical, temporal, and physical invariant checks**.
 
+### Core Pipeline
+
+```text
+Digital Twin Simulation
+        ↓
+Ground Truth Telemetry
+        ↓
+Cyberattack / Sensor Spoofing
+        ↓
+Manipulated Telemetry
+        ↓
+Anomaly + Temporal Analysis
+        ↓
+Causal Reality Verification
+        ↓
+Trust Score + Risk Level
+        ↓
+Explanation + Mitigation
 ```
-                          ┌────────────────────────────────────────────────────────┐
-                          │   PERSON 1: High-Fidelity Physical Simulation Engine   │
-                          │   • 1st Law Thermodynamics (HVAC thermal balance)      │
-                          │   • Bernoulli Conservation & Navier-Stokes friction    │
-                          │   • Environmental diurnal forcing functions            │
-                          └──────────────────────────┬─────────────────────────────┘
-                                                     │  Ground Truth Physical State
-                                                     ▼
-                          ┌────────────────────────────────────────────────────────┐
-                          │   PERSON 2: Red-Team Cyber-Physical Attack Controller  │
-                          │   • False Data Injection (FDI abrupt steps)            │
-                          │   • Stealth Gradual Sensor Drift (rate-limited)        │
-                          │   • Multi-Sensor Coordinated Spoofing                  │
-                          │   • Hydraulic Pump Flow Perturbations                  │
-                          └──────────────────────────┬─────────────────────────────┘
-                                                     │  Attacked / Reported Telemetry
-                                                     ▼
-                          ┌────────────────────────────────────────────────────────┐
-                          │   PERSON 3: Cyber-Physical Invariant & Trust Engine    │
-                          │   • Invariant Bond Equations (Q_thermal, Affinity)     │
-                          │   • Dynamic Trust Scoring (100% ➔ 0%)                  │
-                          │   • Risk Calibration & Threat Matrix                   │
-                          │   • Plain-English Detective Root-Cause Explainer       │
-                          └──────────────────────────┬─────────────────────────────┘
-                                                     │  Invariants & Trust Metrics
-                                                     ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│   PERSON 4: API Architecture, System Integration & Multi-Sector Enterprise Twins                 │
-│   • Asynchronous Orchestrator (P1 ➔ P2 ➔ P3 continuous background loop)                         │
-│   • Multi-Sector Digital Twins:                                                                  │
-│       1. Autonomous Drone Fleet: Radio GPS Satellite Spoofing vs IMU F=m·a Invariant             │
-│       2. Municipal Smart Water: Oldsmar-style Chemical/Level Spoofing vs Bernoulli Law           │
-│       3. Precision Agriculture: Penman-Monteith Evapotranspiration vs False Drought              │
-│       4. Cloud AI Data Center: 320 kW GPU Heat Dissipation vs Thermal Runaway Masking            │
-│   • 5 Standout Features:                                                                         │
-│       1. Scikit-Learn IsolationForest vs Causal Reality Engine Head-to-Head Benchmark            │
-│       2. Real-Time Directed Acyclic Graph (DAG) with Physical Bond Fracture States               │
-│       3. Red-Team / Judge's Live Hacker Sandbox (arbitrary parameter injection)                  │
-│       4. Zero-Downtime Safe-Mode Virtual Telemetry Imputation (IMU Dead-Reckoning)               │
-│       5. Sherlock Forensic Dossier with SHA-256 Cryptographic Tamper-Proof Evidence Seal         │
-│   • Production REST & WebSocket Gateway with Global CORS for Interactive Frontends               │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+
+The ground-truth physical state remains separate from the attacker-controlled reported telemetry, allowing the system to evaluate how cyber manipulation affects the perceived state of the infrastructure.
 
 ---
 
-## 🚀 The 4 Enterprise Industrial Sectors
+## 🏭 Supported Industrial Scenarios
 
-| Sector | Threat Scenario | Primary Cyber-Physical Invariant | Standout Self-Healing Action |
-| :--- | :--- | :--- | :--- |
-| **🚁 Autonomous Drone Fleets** | **Radio GPS Spoofing** (+25 m/s phantom velocity injection) | **Newton's 2nd Law ($\vec{F}=m\vec{a}$)**: GPS $\Delta V$ cannot exist without piezoelectric IMU accelerometer reaction. | Quarantines GPS Receiver Channel A; shifts instantaneously to autonomous **Inertial Dead-Reckoning**. |
-| **💧 Municipal Smart Water** | **Oldsmar Water Attack**: False tank level & pressure spoofing. | **Bernoulli Head Loss & Affinity Laws ($P \propto N^3$)**: Tank level rate cannot contradict pump work & loop friction. | Inverts Bernoulli equation to synthesize virtual tank level; prevents pump cavitation & overflows. |
-| **🌱 Precision Agriculture** | **False Drought Spoofing**: Attacker lowers moisture probe to trigger over-irrigation. | **Penman-Monteith Energy Balance**: Canopy cooling $\Delta T$ and solar irradiance must match transpiration. | Synthesizes true volumetric soil moisture; prevents root rot and saves thousands of liters of fresh water. |
-| **⚡ Cloud AI Data Centers** | **Silicon Thermal Masking**: Attacker masks +35°C hotspot during 320 kW LLM training. | **1st Law Thermodynamics**: Electrical draw $P_{electrical}$ must equal CRAC coolant heat extraction $\dot{Q}_{thermal}$. | Overrides spoofed temperature with thermodynamic heat balance; throttles cluster before catastrophic melting. |
+SENTINEL TWIN is designed as a flexible platform that can be adapted to different cyber-physical environments.
 
----
+| Sector                   | Example Threat                 | Physical Reality Check                             |
+| ------------------------ | ------------------------------ | -------------------------------------------------- |
+| 🚁 Autonomous Drones     | GPS spoofing                   | GPS movement vs IMU/physical motion                |
+| 💧 Smart Water           | Tank level & pressure spoofing | Flow, pressure, pump and tank relationships        |
+| 🌱 Precision Agriculture | False drought readings         | Moisture, temperature and environmental conditions |
+| ⚡ AI Data Centers        | Thermal sensor masking         | Power consumption vs thermal behavior              |
 
-## 🥊 Standout Innovation: Traditional ML vs Sentinel Twin
-
-Why traditional statistical and machine learning anomaly detectors fail:
-
-```
-+-----------------------------------------------------------------------------------------------+
-| HEAD-TO-HEAD BENCHMARK: Radio GPS Spoofing Attack on Autonomous UAV                            |
-+-----------------------------------------------------------------------------------------------+
-| Metric                      | Traditional ML (IsolationForest) | Sentinel Twin (Causal Reality) |
-+-----------------------------+----------------------------------+--------------------------------+
-| Detection Verdict           | ❌ FOOLED                        | ✅ CAUGHT IN 0.04s             |
-| Anomaly Confidence          | 12.4% (Classified as Nominal)    | 99.8% (Critical Violation)     |
-| Blind Spot                  | Checks point distributions only. | Validates conservation of      |
-|                             | 39 m/s is within max speed.      | momentum & force reactions.    |
-| Root Cause Explanation      | None ("Black Box" decision)      | Explicit Newtonian fracture    |
-| Zero-Downtime Mitigation    | None (Failsafe crashes drone)    | Autonomous Inertial Imputation |
-+-----------------------------------------------------------------------------------------------+
-```
+The current prototype focuses on **simulated cyber-physical infrastructure**, allowing the same architecture to be adapted to organization-specific digital twins and telemetry later.
 
 ---
 
-## 🧪 Comprehensive Verification Suite
+## 🛡️ Attack Simulation
 
-Sentinel Twin features **90 automated unit and integration tests** passing across all 4 tracks with 100% test coverage:
+The platform includes a Red-Team attack environment for testing the resilience of the digital twin.
+
+### Supported Attacks
+
+* **False Data Injection (FDI)** — abrupt manipulation of sensor readings.
+* **Gradual Sensor Drift** — slow, stealthy manipulation designed to remain believable.
+* **Coordinated Multi-Sensor Spoofing** — manipulation of multiple telemetry streams simultaneously.
+* **Physical/System Perturbations** — simulated changes to infrastructure behavior.
+
+The attacker modifies the **reported telemetry**, while the underlying ground-truth simulation remains unchanged.
+
+---
+
+## 🧠 Causal Reality Engine
+
+The key innovation is the **Causal Reality Engine**.
+
+Traditional anomaly detection primarily looks for unusual values or statistical patterns.
+
+SENTINEL TWIN additionally checks relationships between multiple signals.
+
+For example:
+
+```text
+Pump ON
+   ↓
+Flow should increase
+   ↓
+Energy consumption should increase
+   ↓
+Tank level should respond accordingly
+   ↓
+Pressure should remain physically consistent
+```
+
+If an attacker manipulates one or more sensors while these relationships become inconsistent, the system identifies a **physical reality violation**.
+
+### Detection Layers
+
+1. **Statistical Analysis**
+2. **Temporal Behavior Analysis**
+3. **Physical/Causal Invariant Verification**
+4. **Trust & Risk Scoring**
+5. **Root-Cause Explanation**
+
+---
+
+## 📊 Traditional ML vs Causal Verification
+
+A major goal of the project is to demonstrate the difference between detecting an unusual **number** and detecting an impossible **system state**.
+
+```text
+Traditional Anomaly Detection
+        ↓
+"Does this value look unusual?"
+
+SENTINEL TWIN
+        ↓
+"Do all these values make physical sense together?"
+```
+
+The platform can compare conventional anomaly detection with its causal verification approach during simulated attacks.
+
+> Benchmark values shown in the prototype represent simulated test scenarios and should not be interpreted as real-world performance guarantees.
+
+---
+
+## 🔍 Security Analysis
+
+For every detected event, the system can provide:
+
+* Anomaly status
+* Violated physical invariant
+* Sensor/system trust score
+* Risk level
+* Attack status
+* Supporting evidence
+* Plain-English explanation
+* Recommended mitigation
+
+This makes the detection process easier to understand than a purely black-box anomaly score.
+
+---
+
+## 🛠️ Mitigation
+
+When telemetry becomes untrusted, the system can simulate defensive responses such as:
+
+* Sensor channel quarantine
+* Virtual telemetry estimation
+* Safe-mode operation
+* Redundant sensor reasoning
+* Physical-state reconstruction
+
+The objective is to maintain safe operation even when one or more reported telemetry streams cannot be trusted.
+
+---
+
+## 🧪 Verification
+
+The project includes automated tests covering the simulation, attack scenarios, defense logic, and system integration.
+
+Run the test suite with:
 
 ```bash
-# Run the entire test suite across all 4 tracks
 pytest -v
-
-# Results:
-# person2/p2/tests/ ... PASSED [45 tests]
-# person3/tests/   ... PASSED [9 tests]
-# person4/tests/   ... PASSED [16 tests]
-# person1/test_simulation.py ... PASSED [20 tests]
-# ======================== 90 passed in 6.66s ========================
 ```
 
 ---
 
-## 🌐 Quickstart: Running the Live System
+## 🌐 Running the Backend
 
-### 1. Start the Production Backend Server
+Install the required dependencies and start the FastAPI server:
+
 ```bash
-cd person4
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 2. Interactive Swagger UI & OpenAPI Specification
-Navigate to: **`http://localhost:8000/docs`**
-- `GET  /api/domains` ➔ View all 4 enterprise sectors.
-- `POST /api/domain/switch?domain_id=autonomous_drone` ➔ Transition digital twin physics.
-- `POST /api/attack/launch` ➔ Red-team spoofing injector.
-- `GET  /api/causal-graph` ➔ Live topology with bond fracture states.
-- `GET  /api/benchmark` ➔ Side-by-side ML vs Sentinel Twin comparison.
-- `POST /api/mitigate/safe-mode` ➔ Zero-downtime virtual sensor imputation.
-- `GET  /api/forensics/dossier` ➔ Sherlock dossier with cryptographic SHA-256 evidence seal.
-- `WS   /api/ws/telemetry` ➔ Continuous 2 Hz streaming WebSocket for interactive frontends.
+The API documentation is available at:
+
+```text
+http://localhost:8000/docs
+```
+
+### Example API Capabilities
+
+```text
+GET  /api/domains
+POST /api/domain/switch
+POST /api/attack/launch
+GET  /api/causal-graph
+GET  /api/benchmark
+POST /api/mitigate/safe-mode
+GET  /api/forensics/dossier
+WS   /api/ws/telemetry
+```
 
 ---
 
-## 👥 Repository Contributor Tracks
+## 🏗️ Technology Stack
 
-- **P1**: Physical Reality Models & Diurnal Simulation Engine (`person1/`)
-- **P2**: Cyber-Physical Attack Controller & Red-Team Perturbation Suite (`person2/`)
-- **P3**: Causal Invariant Verification, Trust Engine & Detective Explainer (`person3/`)
-- **P4**: API Gateway, System Integration, Multi-Sector Enterprise Twins & Standout Features (`person4/`)
+### Backend
+
+* Python
+* FastAPI
+* NumPy
+* Pandas
+* Scikit-learn
+* WebSockets
+
+### Frontend
+
+* React
+* Vite
+* Tailwind CSS
+* Recharts
+
+### Security & Analysis
+
+* Statistical anomaly detection
+* Temporal analysis
+* Physical invariants
+* Causal reasoning
+* Trust scoring
+* Risk analysis
+* SHA-256 evidence integrity
+
+---
+
+## 💡 Why SENTINEL TWIN?
+
+Modern automated infrastructure increasingly depends on sensor data to make decisions.
+
+If an attacker can manipulate that data without being detected, an automated system may make a completely wrong decision while believing everything is normal.
+
+SENTINEL TWIN provides a way to **attack the digital representation of infrastructure and verify whether the resulting reality is physically believable**.
+
+> **Don't just detect bad data. Verify the reality behind the data.**
+
+---
+
+## 📌 Project Status
+
+SENTINEL TWIN is a **hackathon prototype** demonstrating adversarial digital twins, cyber-physical attack simulation, invariant-based verification, and trust-aware telemetry analysis.
+
+The architecture is designed to be extended toward organization-specific digital twins and real-world infrastructure telemetry.
